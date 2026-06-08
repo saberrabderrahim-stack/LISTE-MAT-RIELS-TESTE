@@ -1,0 +1,107 @@
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gestion des Tronçons</title>
+
+<style>
+body{
+font-family:Arial,sans-serif;
+background:#f2f5fb;
+display:flex;
+justify-content:center;
+align-items:center;
+height:100vh;
+margin:0;
+}
+
+.login-box{
+background:white;
+padding:30px;
+border-radius:16px;
+width:90%;
+max-width:400px;
+text-align:center;
+box-shadow:0 2px 10px rgba(0,0,0,0.1);
+}
+
+.logo{
+width:180px;
+max-width:90%;
+margin-bottom:15px;
+}
+
+input{
+width:100%;
+padding:14px;
+margin-top:10px;
+border-radius:10px;
+border:1px solid #ccc;
+box-sizing:border-box;
+}
+
+button{
+width:100%;
+padding:14px;
+margin-top:15px;
+border:none;
+border-radius:10px;
+background:#0d47c9;
+color:white;
+font-size:16px;
+cursor:pointer;
+}
+
+.error{
+color:red;
+margin-top:10px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="login-box">
+
+<img src="logo.jpeg" class="logo">
+
+<h2>Connexion</h2>
+
+<input type="text" id="username" placeholder="Utilisateur">
+
+<input type="password" id="password" placeholder="Mot de passe">
+
+<button onclick="login()">Se connecter</button>
+
+<p class="error" id="error"></p>
+
+</div>
+
+<script>
+
+const USER = "Asaber";
+const PASS = "Al@e16Lokmn23";
+
+function login(){
+
+const u = document.getElementById("username").value;
+const p = document.getElementById("password").value;
+
+if(u === USER && p === PASS){
+
+alert("Connexion réussie");
+
+}else{
+
+document.getElementById("error").innerText = "Utilisateur ou mot de passe incorrect";
+
+}
+
+}
+
+</script>
+
+</body>
+</html>
