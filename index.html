@@ -15,12 +15,12 @@
         .table { font-size: 0.85rem; }
         .table th, .table td { padding: 8px 4px; }
        
-        /* Fix Auto-Zoom on Mobile Devices */
+        /* Fix Auto-Zoom on Mobile Devices (Font size must be at least 16px) */
         .form-control, .form-select, .form-control-sm, .form-select-sm {
             font-size: 16px !important;
         }
 
-        /* Logo styles */
+        /* Styles pour les logos et en-têtes administratifs */
         .logo-login { max-width: 140px; height: auto; display: block; margin: 0 auto 10px auto; object-fit: contain; border-radius: 8px; }
         .logo-header { max-width: 100px; height: auto; object-fit: contain; background-color: rgba(255, 255, 255, 0.9); padding: 5px; border-radius: 8px; }
         .admin-text { font-size: 0.8rem; font-weight: bold; line-height: 1.3; text-transform: uppercase; letter-spacing: 0.5px; }
@@ -43,7 +43,7 @@
 <div id="loginScreen" class="container">
     <div id="loginContainer" class="card mx-auto p-4 border-top border-primary border-4">
         <div class="text-center mb-3">
-            <img src="https://via.placeholder.com/140x80?text=Logo" alt="Logo Application" class="logo-login">
+            <img src="image.png" alt="Logo Application" class="logo-login" onerror="this.src='assets/image.png';">
             <div class="admin-text admin-text-login mt-2">
                 Direction prefectorale<br>
                 AIN CHOCK HAY HASSANI<br>
@@ -72,7 +72,7 @@
 <div id="appScreen" class="container mt-3 d-none">
     <div class="header-title d-flex align-items-center justify-content-center gap-4 flex-wrap text-center">
         <div class="d-flex flex-column align-items-center">
-            <img src="https://via.placeholder.com/100x60?text=Logo" alt="Logo" class="logo-header">
+            <img src="image.png" alt="Logo" class="logo-header" onerror="this.src='assets/image.png';">
             <div class="admin-text admin-text-header mt-2">
                 DP AC HH<br>
                 DET / DEP
@@ -100,7 +100,7 @@
         <div id="dbActions" class="d-none mt-1">
             <button class="btn btn-sm btn-outline-danger py-1" onclick="clearLocalDB()">🔄 Changer / Mettre a jour le fichier Excel</button>
         </div>
-        <div id="uploadError" class="mt-2 text-danger fw-bold small d-none">❌ Erreur de structure (colonnes Nœud, Conduite source, Conduite projeté manquantes ou deuxieme feuille introuvable).</div>
+        <div id="uploadError" class="mt-2 text-danger fw-bold small d-none">❌ Erreur de structure (colonnes Noeud, Source, Projete manquantes ou deuxieme feuille introuvable).</div>
     </div>
  
     <div id="mainAppContent" style="opacity: 0.2; pointer-events: none; transition: all 0.3s ease;">
@@ -256,6 +256,54 @@
  
     document.getElementById('projectDate').valueAsDate = new Date();
  
+    // ========== FONCTIONS UTILITAIRES DE NORMALISATION ==========
+    function normalizeString(str) {
+        if (!str || typeof str !== 'string') return '';
+        // Supprimer les accents et normaliser
+        return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+                   .trim()
+                   .toLowerCase()
+                   .replace(/\s+/g, ' ');
+    }
+    
+    function findColumnName(keys, possibleNames) {
+        for (let possible of possibleNames) {
+            const normalizedPossible = normalizeString(possible);
+            for (let key of keys) {
+                if (normalizeString(key) === normalizedPossible) {
+                    return key;
+                }
+            }
+        }
+        return null;
+    }
+    
+    function cleanColumnNames(row) {
+        let cleaned = {};
+        const keys = Object.keys(row);
+        
+        // Trouver la colonne Noeud (Nœud, Noeud, NOEUD, NŒUD)
+        const nodeKey = findColumnName(keys, ['noeud', 'nœud', 'node']);
+        if (nodeKey) cleaned['Noeud'] = row[nodeKey];
+        
+        // Trouver la colonne Source (Conduite source, conduite source, Source)
+        const sourceKey = findColumnName(keys, ['conduite source', 'source']);
+        if (sourceKey) cleaned['Source'] = row[sourceKey];
+        
+        // Trouver la colonne Projete (Conduite projeté, Conduite projetee, Conduite projetée, Projete)
+        const projeteKey = findColumnName(keys, ['conduite projeté', 'conduite projetee', 'conduite projetée', 'projete']);
+        if (projeteKey) cleaned['Projete'] = row[projeteKey];
+        
+        // Garder toutes les autres colonnes (équipements)
+        for (let key of keys) {
+            if (!cleaned.hasOwnProperty('Noeud') && !cleaned.hasOwnProperty('Source') && !cleaned.hasOwnProperty('Projete')) {
+                cleaned[key] = row[key];
+            }
+        }
+        
+        return cleaned;
+    }
+ 
     function handleLogin(e) {
         e.preventDefault();
         const user = document.getElementById('username').value;
@@ -329,56 +377,108 @@
                 const data = evt.target.result;
                 const workbook = XLSX.read(data, { type: 'binary' });
                 
+                console.log("=== DEBUG: Lecture du fichier Excel ===");
+                console.log("Noms des feuilles trouvées:", workbook.SheetNames);
+                
+                // === 1. Lecture de la première feuille (Nœuds) ===
                 const firstSheetName = workbook.SheetNames[0];
                 const worksheet = workbook.Sheets[firstSheetName];
                 const jsonRows = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
                
-                if(jsonRows.length === 0) throw new Error("Vide");
+                console.log("Colonnes brutes dans la première feuille:", jsonRows.length > 0 ? Object.keys(jsonRows[0]) : []);
+               
+                if(jsonRows.length === 0) throw new Error("La première feuille est vide");
  
-                // Nettoyage des données en utilisant les noms de colonnes français
-                let cleanedData = jsonRows.map(row => {
-                    let cleanedRow = {};
-                    for (let key in row) {
-                        let cleanKey = key.trim();
-                        // Correspondance avec les noms français du fichier Excel
-                        if (cleanKey === "Nœud" || cleanKey === "Noeud") cleanKey = "Noeud";
-                        if (cleanKey === "Conduite source") cleanKey = "Source";
-                        if (cleanKey === "Conduite projeté") cleanKey = "Projete";
-                        cleanedRow[cleanKey] = row[key];
-                    }
-                    return cleanedRow;
-                });
- 
-                // Vérification que les colonnes essentielles existent
-                if (!cleanedData[0].hasOwnProperty('Noeud') || 
-                    !cleanedData[0].hasOwnProperty('Source') || 
-                    !cleanedData[0].hasOwnProperty('Projete')) {
-                    throw new Error("Champs invalides");
+                // Nettoyage intelligent des colonnes
+                let cleanedData = jsonRows.map(row => cleanColumnNames(row));
+               
+                console.log("Colonnes après normalisation:", cleanedData.length > 0 ? Object.keys(cleanedData[0]) : []);
+                console.log("Nombre de lignes dans la première feuille:", cleanedData.length);
+               
+                // Vérification des colonnes obligatoires après nettoyage
+                if (!cleanedData[0].hasOwnProperty('Noeud')) {
+                    throw new Error("Colonne 'Noeud' introuvable après normalisation");
+                }
+                if (!cleanedData[0].hasOwnProperty('Source')) {
+                    throw new Error("Colonne 'Source' introuvable après normalisation");
+                }
+                if (!cleanedData[0].hasOwnProperty('Projete')) {
+                    throw new Error("Colonne 'Projete' introuvable après normalisation");
                 }
  
-                // Lecture de la deuxième feuille (prix)
+                // === 2. Lecture de la deuxième feuille (Articles/Prix) ===
                 let cleanedArticles = [];
+                let foundSheet = false;
+                
+                // Chercher la deuxième feuille (indice 1) ou toute feuille contenant "PRIX" ou "ARTICLE"
                 if (workbook.SheetNames.length > 1) {
                     const secondSheetName = workbook.SheetNames[1];
+                    console.log("Utilisation de la deuxième feuille:", secondSheetName);
                     const secondWorksheet = workbook.Sheets[secondSheetName];
                     const jsonArticles = XLSX.utils.sheet_to_json(secondWorksheet, { defval: "" });
                     
-                    cleanedArticles = jsonArticles.map(row => {
-                        let cleanedRow = {};
-                        for (let key in row) {
-                            let cleanKey = key.trim();
-                            cleanedRow[cleanKey] = String(row[key]).trim();
+                    if (jsonArticles.length > 0) {
+                        cleanedArticles = jsonArticles.map(row => {
+                            let cleanedRow = {};
+                            for (let key in row) {
+                                let cleanKey = key.trim();
+                                cleanedRow[cleanKey] = String(row[key]).trim();
+                            }
+                            return cleanedRow;
+                        });
+                        foundSheet = true;
+                        console.log("Nombre d'articles chargés:", cleanedArticles.length);
+                    }
+                }
+                
+                // Si pas trouvé, chercher une autre feuille qui contient ARTICLE ou PRIX
+                if (!foundSheet) {
+                    for (let i = 1; i < workbook.SheetNames.length; i++) {
+                        const sheetName = workbook.SheetNames[i];
+                        const tempSheet = workbook.Sheets[sheetName];
+                        const tempJson = XLSX.utils.sheet_to_json(tempSheet, { defval: "" });
+                        
+                        if (tempJson.length > 0) {
+                            const firstRow = tempJson[0];
+                            const hasArticle = Object.keys(firstRow).some(k => normalizeString(k).includes('article'));
+                            const hasPrix = Object.keys(firstRow).some(k => normalizeString(k).includes('prix'));
+                            
+                            if (hasArticle || hasPrix) {
+                                console.log("Feuille de prix trouvée:", sheetName);
+                                cleanedArticles = tempJson.map(row => {
+                                    let cleanedRow = {};
+                                    for (let key in row) {
+                                        let cleanKey = key.trim();
+                                        cleanedRow[cleanKey] = String(row[key]).trim();
+                                    }
+                                    return cleanedRow;
+                                });
+                                foundSheet = true;
+                                break;
+                            }
                         }
-                        return cleanedRow;
-                    });
+                    }
+                }
+                
+                if (!foundSheet) {
+                    console.warn("Aucune feuille de prix trouvée, seule la base des nœuds sera utilisée");
+                } else {
+                    console.log("Feuille de prix chargée avec succès,", cleanedArticles.length, "articles");
                 }
  
                 localStorage.setItem('aep_db_reference', JSON.stringify(cleanedData));
                 localStorage.setItem('aep_db_articles', JSON.stringify(cleanedArticles));
                 checkLocalDatabase();
+                
             } catch (err) {
-                console.error(err);
+                console.error("Erreur détaillée:", err);
                 document.getElementById('uploadError').classList.remove('d-none');
+                const errorMsg = document.getElementById('uploadError');
+                errorMsg.innerHTML = "❌ " + err.message;
+                setTimeout(() => {
+                    if (errorMsg.innerHTML !== "❌ " + err.message) return;
+                    errorMsg.innerHTML = "❌ Erreur de structure (colonnes Noeud, Source, Projete manquantes ou deuxieme feuille introuvable).";
+                }, 5000);
             }
         };
         reader.readAsBinaryString(file);
@@ -436,8 +536,6 @@
         const source = document.getElementById('nodeSource').value;
         const proj = document.getElementById('nodeProj').value;
         
-        if (!typeBase || !userNumber) return;
-        
         const nodeCustomLabel = typeBase + userNumber;
  
         tempRows.push({ entryType: 'node', type: nodeCustomLabel, baseType: typeBase, userNum: userNumber, source, proj });
@@ -450,8 +548,6 @@
         e.preventDefault();
         const diameter = document.getElementById('pvcDiameter').value;
         const length = document.getElementById('pvcLength').value.trim();
-        
-        if (!diameter || !length) return;
 
         tempRows.push({ entryType: 'pvc', type: 'PVC DN' + diameter, baseType: 'PVC', userNum: '', source: diameter, proj: length });
         renderSaisieTable();
@@ -513,12 +609,6 @@
             alert('Veuillez ajouter au moins un element !');
             return;
         }
-        
-        if (dbReference.length === 0) {
-            alert('Veuillez charger la base de donnees Excel d\'abord !');
-            return;
-        }
-        
         let summary = {};
         let pvcSummary = {}; 
         let totalPvcLength = 0; 
@@ -560,21 +650,18 @@
                     return isTypeMatch && (excelSrc === String(row.source).trim()) && (excelPrj === String(row.proj).trim());
                 }
             });
-            
             if (match) {
                 equipmentCols.forEach(col => {
                     const value = parseFloat(match[col]);
                     if (!isNaN(value) && value > 0) summary[col] = (summary[col] || 0) + value;
                 });
-            } else {
-                console.warn('Aucun match trouvé pour:', row);
             }
         });
  
         totalGeneralGlobal = 0;
         finalResults = [];
 
-        // Matériels et équipements des nœuds
+        // 1. Matériels et équipements des nœuds
         Object.keys(summary).forEach(key => {
             const searchKeyClean = key.trim().toUpperCase().replace(/\s+/g, ' ');
             
@@ -601,15 +688,15 @@
             });
         });
 
-        // Conduites PVC
+        // 2. Conduites PVC (TUYAUX PVC PN 16 Ø[Diameter])
         Object.keys(pvcSummary).forEach(diameter => {
             const targetedDesignation = `TUYAUX PVC PN 16 Ø${diameter}`;
+            const targetClean = targetedDesignation.toUpperCase().replace(/\s+/g, ' ');
             
             const artMatch = dbArticlesPrice.find(a => {
                 if (!a['DESIGNATION']) return false;
                 const dbDesigClean = String(a['DESIGNATION']).trim().toUpperCase().replace(/\s+/g, ' ');
-                return dbDesigClean.includes(targetedDesignation.toUpperCase()) || 
-                       targetedDesignation.toUpperCase().includes(dbDesigClean);
+                return dbDesigClean === targetClean || dbDesigClean.includes(targetClean) || targetClean.includes(dbDesigClean);
             });
 
             const totalLength = pvcSummary[diameter];
@@ -629,14 +716,14 @@
             });
         });
 
-        // Grillage avertisseur
+        // 3. GRILLAGE AVERTISSEUR
         if (totalPvcLength > 0) {
-            const grillageKey = "GRILLAGE AVERTISSEUR BLEU";
+            const grillageKey = "GRILLAGE AVERTISSEUR";
             
             const artMatch = dbArticlesPrice.find(a => {
                 if (!a['DESIGNATION']) return false;
                 const dbDesigClean = String(a['DESIGNATION']).trim().toUpperCase().replace(/\s+/g, ' ');
-                return dbDesigClean.includes("GRILLAGE") || grillageKey.includes(dbDesigClean);
+                return dbDesigClean.includes(grillageKey) || grillageKey.includes(dbDesigClean);
             });
 
             const unitPrice = artMatch ? parseFloat(artMatch['PRIX']) : 0;
@@ -679,11 +766,11 @@
                         <td><span class="text-muted fw-bold">${res.article}</span></td>
                         <td class="text-start small"><strong>${res.designation}</strong></td>
                         <td><span class="badge bg-success fs-6">${res.qty.toFixed(2)}${qtyUnit}</span></td>
-                        <td>${res.prix !== '-' ? `<span class="text-secondary fw-bold">${parseFloat(res.prix).toFixed(2)}</span>` : '-'}</td>
-                        <td>${res.montant !== '-' ? `<span class="text-primary fw-bold">${parseFloat(res.montant).toFixed(2)}</span>` : '-'}</td>
+                        <td>${res.prix !== '-' ? `<span class="text-secondary fw-bold">${res.prix.toFixed(2)}</span>` : '-'}</td>
+                        <td>${res.montant !== '-' ? `<span class="text-primary fw-bold">${res.montant.toFixed(2)}</span>` : '-'}</td>
                     </tr>`;
             });
-            document.getElementById('totalGeneralCell').innerHTML = totalGeneralGlobal.toFixed(2) + ' DH';
+            document.getElementById('totalGeneralCell').innerText = totalGeneralGlobal.toFixed(2) + ' DH';
         }
         document.getElementById('resultCard').classList.remove('d-none');
         document.getElementById('resultCard').scrollIntoView({ behavior: 'smooth' });
@@ -707,9 +794,9 @@
         const rowsResultat = finalResults.map(r => ([
             r.article, 
             r.designation, 
-            r.qty.toFixed(2), 
-            r.prix !== '-' ? parseFloat(r.prix).toFixed(2) : '-', 
-            r.montant !== '-' ? parseFloat(r.montant).toFixed(2) : '-'
+            r.qty, 
+            r.prix !== '-' ? r.prix : '-', 
+            r.montant !== '-' ? r.montant : '-'
         ]));
         
         const dataResultat = [
@@ -717,4 +804,59 @@
             [],
             ["N° Article", "Designation de l'Equipement / Conduite", "Quantite Totale", "Prix Unitaire (DH)", "Montant Total (DH)"],
             ...rowsResultat,
-            ["", "", "", "Total General :", total
+            ["", "", "", "Total General :", totalGeneralGlobal > 0 ? totalGeneralGlobal : "-"]
+        ];
+ 
+        const wb = XLSX.utils.book_new();
+        const wsSaisie = XLSX.utils.aoa_to_sheet(dataSaisie);
+        const wsResultat = XLSX.utils.aoa_to_sheet(dataResultat);
+ 
+        XLSX.utils.book_append_sheet(wb, wsSaisie, "Saisie Globale");
+        XLSX.utils.book_append_sheet(wb, wsResultat, "Recapitulatif Materiel");
+ 
+        const fileName = `Export_AEP_${commune}_${pDate.replace(/-/g, "")}.xlsx`;
+        XLSX.writeFile(wb, fileName);
+    }
+ 
+    function saveProject() {
+        if(tempRows.length === 0) return alert('Aucune donnee !');
+        const projectPackage = {
+            metadata: {
+                name: document.getElementById('projectName').value,
+                commune: document.getElementById('projectCommune').value,
+                date: document.getElementById('projectDate').value
+            },
+            rows: tempRows
+        };
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(projectPackage));
+        const downloadAnchor = document.createElement('a');
+        downloadAnchor.setAttribute("href", dataStr);
+        downloadAnchor.setAttribute("download", `Backup_AEP_${projectPackage.metadata.commune || 'Projet'}.json`);
+        document.body.appendChild(downloadAnchor);
+        downloadAnchor.click();
+        downloadAnchor.remove();
+    }
+ 
+    function importProject(event) {
+        const input = event.target;
+        const reader = new FileReader();
+        reader.onload = function(){
+            try {
+                const imported = JSON.parse(reader.result);
+                if(imported.metadata) {
+                    document.getElementById('projectName').value = imported.metadata.name || "";
+                    document.getElementById('projectCommune').value = imported.metadata.commune || "";
+                    document.getElementById('projectDate').value = imported.metadata.date || "";
+                    tempRows = imported.rows || [];
+                } else {
+                    tempRows = imported;
+                }
+                renderSaisieTable();
+                alert('Projet restaure avec succes.');
+            } catch(e) { alert('Fichier invalide.'); }
+        };
+        reader.readAsText(input.files[0]);
+    }
+</script>
+</body>
+</html>
