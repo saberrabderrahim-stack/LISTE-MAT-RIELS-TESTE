@@ -1,756 +1,903 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Calcul des équipements de nœuds de réseaux AEP</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <style>
-        body { background-color: #f4f6f9; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 14px; }
-        .card { box-shadow: 0 2px 8px rgba(0,0,0,0.06); border: none; margin-bottom: 15px; border-radius: 8px; padding: 15px !important; }
-        .header-title { background: linear-gradient(135deg, #1e3c72, #2a5298); color: white; padding: 20px 15px; border-radius: 8px; margin-bottom: 20px; }
-        .badge-type { font-size: 0.85rem; padding: 4px 8px; }
-        #loginContainer { max-width: 400px; margin-top: 5%; }
-        .table { font-size: 0.85rem; }
-        .table th, .table td { padding: 8px 4px; }
-       
-        /* Fix Auto-Zoom on Mobile Devices (Font size must be at least 16px) */
-        .form-control, .form-select, .form-control-sm, .form-select-sm {
-            font-size: 16px !important;
-        }
-
-        /* Styles pour les logos et en-têtes administratifs */
-        .logo-login { max-width: 140px; height: auto; display: block; margin: 0 auto 10px auto; object-fit: contain; border-radius: 8px; }
-        .logo-header { max-width: 100px; height: auto; object-fit: contain; background-color: rgba(255, 255, 255, 0.9); padding: 5px; border-radius: 8px; }
-        .admin-text { font-size: 0.8rem; font-weight: bold; line-height: 1.3; text-transform: uppercase; letter-spacing: 0.5px; }
-        .admin-text-login { color: #555; }
-        .admin-text-header { color: #e0e6ed; font-size: 0.75rem; }
- 
-        @media (max-width: 576px) {
-            h2 { font-size: 1.2rem; }
-            h5 { font-size: 1.05rem; }
-            .btn { width: 100%; margin-bottom: 5px; }
-            .btn-group-mobile { display: flex; flex-direction: column; }
-            .logo-login { max-width: 110px; display: block !important; }
-            .logo-header { max-width: 80px; display: block !important; }
-            .admin-text { font-size: 0.75rem; }
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>Calcul des Equipements AEP — SRM Casablanca-Settat</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
+<style>
+:root {
+  --srm-blue:#2B7FC1; --srm-blue-dark:#1a5f96; --srm-blue-light:#e8f4fd;
+  --srm-green:#4DB05B; --srm-green-dark:#3a8c46; --srm-green-light:#eaf7ec;
+  --srm-orange:#E8823E; --srm-orange-dark:#c4662a; --srm-orange-light:#fef3eb;
+  --srm-gray:#f4f6f9; --srm-border:#dce4ef; --srm-text:#1e2d3d; --srm-text-muted:#6b7c93;
+}
+*{box-sizing:border-box;}
+body{font-family:'Cairo','Segoe UI',sans-serif;background:#eef2f7;color:var(--srm-text);}
+input,select,textarea{font-size:16px!important;font-family:'Cairo',sans-serif!important;}
+.srm-card{background:#fff;border-radius:12px;border:1px solid var(--srm-border);box-shadow:0 1px 6px rgba(43,127,193,0.07);margin-bottom:15px;padding:18px;}
+.srm-btn-primary{background:linear-gradient(135deg,var(--srm-blue),var(--srm-blue-dark));color:#fff;border:none;border-radius:8px;padding:9px 18px;font-family:'Cairo',sans-serif;font-weight:700;font-size:14px;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:6px;width:100%;justify-content:center;}
+.srm-btn-primary:hover{transform:translateY(-1px);box-shadow:0 4px 14px rgba(43,127,193,0.35);}
+.srm-btn-green{background:linear-gradient(135deg,var(--srm-green),var(--srm-green-dark));color:#fff;}
+.srm-btn-green:hover{box-shadow:0 4px 14px rgba(77,176,91,0.35);}
+.srm-btn-orange{background:linear-gradient(135deg,var(--srm-orange),var(--srm-orange-dark));color:#fff;}
+.srm-btn-orange:hover{box-shadow:0 4px 14px rgba(232,130,62,0.35);}
+.srm-btn-danger{background:linear-gradient(135deg,#e53e3e,#c53030);color:#fff;}
+.srm-btn-sm{padding:6px 12px;font-size:13px;width:auto;}
+.srm-input{width:100%;padding:10px 14px;border:1.5px solid var(--srm-border);border-radius:8px;outline:none;transition:border-color .2s,box-shadow .2s;background:#f9fbfd;font-family:'Cairo',sans-serif;}
+.srm-input:focus{border-color:var(--srm-blue);box-shadow:0 0 0 3px rgba(43,127,193,0.12);background:#fff;}
+.srm-select{width:100%;padding:10px 14px;border:1.5px solid var(--srm-border);border-radius:8px;outline:none;background:#f9fbfd;font-family:'Cairo',sans-serif;cursor:pointer;}
+.srm-select:focus{border-color:var(--srm-blue);box-shadow:0 0 0 3px rgba(43,127,193,0.12);background:#fff;}
+.login-bg{background:linear-gradient(135deg,#0d2b45 0%,#1a5f96 50%,#2B7FC1 100%);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:16px;}
+.login-card{background:rgba(255,255,255,0.98);backdrop-filter:blur(10px);border-radius:20px;box-shadow:0 20px 60px rgba(0,0,0,0.25);max-width:420px;width:100%;padding:36px 32px;}
+.app-header{background:#fff;border-bottom:1px solid var(--srm-border);padding:10px 16px;position:sticky;top:0;z-index:40;box-shadow:0 1px 4px rgba(43,127,193,0.08);}
+.section-icon{width:32px;height:32px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;}
+.srm-label{display:block;font-size:13px;font-weight:700;margin-bottom:6px;color:var(--srm-text);}
+.form-row{display:grid;gap:12px;margin-bottom:12px;}
+.cols-2{grid-template-columns:1fr 1fr;}
+.cols-4{grid-template-columns:1fr 1fr 1fr 1fr;}
+@media(max-width:600px){.cols-2,.cols-4{grid-template-columns:1fr 1fr;}}
+@media(max-width:400px){.cols-2{grid-template-columns:1fr;}}
+.table-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+thead tr{background:linear-gradient(135deg,var(--srm-blue),var(--srm-blue-dark));color:#fff;}
+th,td{padding:9px 8px;text-align:center;border-bottom:1px solid var(--srm-border);}
+tr:nth-child(even){background:#f7fbff;}
+tr:hover{background:#eef6ff;}
+tfoot tr{background:linear-gradient(90deg,var(--srm-blue-light),#f0f8fe);font-weight:700;}
+.badge-node{background:linear-gradient(135deg,var(--srm-blue),var(--srm-blue-dark));color:#fff;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700;}
+.badge-pvc{background:linear-gradient(135deg,var(--srm-green),var(--srm-green-dark));color:#fff;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700;}
+.toast{position:fixed;bottom:20px;right:20px;padding:12px 20px;border-radius:12px;background:var(--srm-text);color:#fff;font-weight:700;font-size:13px;display:flex;align-items:center;gap:8px;z-index:999;transform:translateY(80px);opacity:0;transition:all .3s;pointer-events:none;}
+.toast.show{transform:translateY(0);opacity:1;}
+.section-title{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:800;color:var(--srm-text);margin-bottom:14px;}
+.d-none{display:none!important;}
+.alert{padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:10px;}
+.alert-info{background:#e8f4fd;color:#1a5f96;border:1px solid #b8d9f0;}
+.alert-success{background:var(--srm-green-light);color:var(--srm-green-dark);border:1px solid #b3e0ba;}
+.alert-warning{background:var(--srm-orange-light);color:var(--srm-orange-dark);border:1px solid #f9c9a0;}
+.alert-danger{background:#fff5f5;color:#c53030;border:1px solid #fed7d7;}
+.result-pvc{background:#eaf7ec!important;}
+.result-grillage{background:#fef9ec!important;}
+.qty-badge{background:var(--srm-green);color:#fff;border-radius:6px;padding:2px 8px;font-weight:700;}
+.price-cell{color:var(--srm-text-muted);font-weight:600;}
+.total-cell{color:var(--srm-blue);font-weight:700;}
+.total-row td{background:linear-gradient(90deg,var(--srm-blue-light),#f0f8fe)!important;color:var(--srm-blue);font-weight:800;font-size:14px;}
+.app-content{max-width:860px;margin:0 auto;padding:16px;}
+</style>
 </head>
 <body>
- 
-<div id="loginScreen" class="container">
-    <div id="loginContainer" class="card mx-auto p-4 border-top border-primary border-4">
-        <div class="text-center mb-3">
-            <img src="image.png" alt="Logo Application" class="logo-login" onerror="this.src='assets/image.png';">
-            <div class="admin-text admin-text-login mt-2">
-                Direction prefectorale<br>
-                AIN CHOCK HAY HASSANI<br>
-                DEPARTEMENT ETUDE ET TRAVAUX<br>
-                DIVISION EAU POTABLE
-            </div>
+
+<!-- ═══════ LOGIN ═══════ -->
+<div id="login-page" class="login-bg">
+  <div class="login-card">
+    <div class="text-center mb-4">
+      <img id="login-logo" src="" alt="Logo SRM" style="height:80px;object-fit:contain;display:block;margin:0 auto 10px;">
+      <div style="width:60px;height:3px;margin:0 auto 12px;background:linear-gradient(90deg,var(--srm-blue),var(--srm-green),var(--srm-orange));border-radius:4px;"></div>
+      <div style="font-size:11px;font-weight:700;color:var(--srm-text-muted);text-transform:uppercase;line-height:1.6;">
+        Société Régionale Multiservices<br>Casablanca-Settat SA
+      </div>
+      <div style="font-size:11px;font-weight:800;color:var(--srm-blue);margin-top:2px;">Direction Préfectorale Ain Chock Hay Hassani</div>
+      <h4 style="font-size:17px;font-weight:900;color:var(--srm-text);margin-top:14px;">
+        <i class="fa-solid fa-droplet" style="color:var(--srm-blue);"></i> Équipements AEP
+      </h4>
+      <p style="font-size:12px;color:var(--srm-text-muted);margin-top:2px;">Portail de Calcul des Matériels</p>
+    </div>
+    <div id="login-error" class="alert alert-danger d-none" style="font-size:13px;">
+      <i class="fa-solid fa-circle-exclamation"></i> Identifiant ou mot de passe incorrect.
+    </div>
+    <form id="login-form" onsubmit="handleLogin(event)">
+      <div class="mb-3">
+        <label class="srm-label"><i class="fa-solid fa-user" style="color:var(--srm-blue);margin-right:6px;"></i>Identifiant</label>
+        <input type="text" id="username" class="srm-input" placeholder="Nom d'utilisateur" required autocomplete="username">
+      </div>
+      <div class="mb-4">
+        <label class="srm-label"><i class="fa-solid fa-lock" style="color:var(--srm-blue);margin-right:6px;"></i>Mot de passe</label>
+        <input type="password" id="password" class="srm-input" placeholder="••••••••" required autocomplete="current-password">
+      </div>
+      <button type="submit" class="srm-btn-primary py-3" style="font-size:15px;">
+        <i class="fa-solid fa-right-to-bracket"></i> Se connecter
+      </button>
+    </form>
+    <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--srm-border);text-align:center;font-size:11px;color:var(--srm-text-muted);">
+      Département Études & Travaux — Division Eau Potable
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ APP ═══════ -->
+<div id="app-screen" class="d-none">
+
+  <!-- HEADER -->
+  <div class="app-header">
+    <div style="max-width:860px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <img id="app-logo" src="" alt="Logo" style="height:44px;object-fit:contain;">
+        <div style="border-left:1px solid var(--srm-border);padding-left:10px;">
+          <div style="display:flex;align-items:center;gap:6px;">
+            <span style="font-size:12px;font-weight:900;color:var(--srm-blue);text-transform:uppercase;letter-spacing:1px;">SRM</span>
+            <span style="width:4px;height:4px;border-radius:50%;background:var(--srm-orange);display:inline-block;"></span>
+            <span style="font-size:12px;font-weight:700;color:#444;">AEP Ain Chock</span>
+          </div>
+          <div style="font-size:11px;color:#666;font-weight:600;line-height:1.3;">
+            Calcul des Matériels &amp; Équipements
+          </div>
+          <div style="display:flex;gap:4px;margin-top:2px;">
+            <span style="font-size:9px;font-weight:700;padding:1px 6px;border-radius:4px;background:var(--srm-blue-light);color:var(--srm-blue);">DIR. PRÉFECTORALE</span>
+            <span style="font-size:9px;font-weight:700;padding:1px 6px;border-radius:4px;background:var(--srm-green-light);color:var(--srm-green-dark);">EAU POTABLE 💧</span>
+          </div>
         </div>
-        <hr class="my-3 opacity-25">
-       
-        <h4 class="text-center text-primary mb-4">🔑 Connexion Application AEP</h4>
-        <div id="loginError" class="alert alert-danger d-none small">Identifiant ou mot de passe incorrect.</div>
-        <form id="loginForm" onsubmit="handleLogin(event)">
-            <div class="mb-3">
-                <label class="form-label fw-bold">Identifiant</label>
-                <input type="text" id="username" class="form-control" required autocomplete="username">
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+        <div style="display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:8px;background:var(--srm-blue-light);border:1px solid #b8d9f0;font-size:12px;font-weight:700;color:var(--srm-blue);">
+          <i class="fa-solid fa-user-tie"></i><span id="header-user">—</span>
+        </div>
+        <button onclick="handleLogout()" style="padding:7px 10px;border-radius:8px;border:1px solid var(--srm-border);background:#fff;cursor:pointer;color:#888;font-size:14px;" title="Déconnexion">
+          <i class="fa-solid fa-arrow-right-from-bracket"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="app-content">
+
+    <!-- DB Upload Card -->
+    <div class="srm-card" id="upload-card">
+      <div class="section-title">
+        <span class="section-icon" style="background:var(--srm-blue-light);color:var(--srm-blue);"><i class="fa-solid fa-database"></i></span>
+        Base de données (Fichier Excel)
+      </div>
+      <div id="db-status" class="alert alert-info">Vérification de la base de données locale...</div>
+      <div id="upload-input" class="d-none">
+        <p style="font-size:12px;color:var(--srm-text-muted);margin-bottom:8px;">
+          Sélectionnez le fichier <strong>NOEUD TYPE3.xlsx</strong> pour l'enregistrer.
+        </p>
+        <input type="file" class="srm-input" id="excel-ref-file" accept=".xlsx,.xls,.csv" onchange="handleRefExcel(event)" style="padding:8px;">
+      </div>
+      <div id="db-actions" class="d-none" style="margin-top:8px;">
+        <button class="srm-btn-primary srm-btn-danger srm-btn-sm" onclick="clearLocalDB()">
+          <i class="fa-solid fa-rotate"></i> Changer le fichier Excel
+        </button>
+      </div>
+      <div id="upload-error" class="alert alert-danger d-none" style="margin-top:8px;">
+        ❌ Erreur de structure — colonnes Noeud, Source, Projete manquantes ou deuxième feuille introuvable.
+      </div>
+    </div>
+
+    <!-- Main content (disabled until DB loaded) -->
+    <div id="main-app-content" style="opacity:0.25;pointer-events:none;transition:all .3s;">
+
+      <!-- Project info -->
+      <div class="srm-card">
+        <div class="section-title">
+          <span class="section-icon" style="background:var(--srm-blue-light);color:var(--srm-blue);"><i class="fa-solid fa-folder-open"></i></span>
+          Informations Générales du Projet
+        </div>
+        <div class="form-row cols-2">
+          <div>
+            <label class="srm-label">Nom du projet</label>
+            <input type="text" id="projectName" class="srm-input" placeholder="Ex: Renouvellement Secteur...">
+          </div>
+          <div>
+            <label class="srm-label">Commune</label>
+            <select id="projectCommune" class="srm-select">
+              <option value="" selected disabled>Choisir...</option>
+              <option value="AC">Ain Chock (AC)</option>
+              <option value="HH">Hay Hassani (HH)</option>
+            </select>
+          </div>
+          <div>
+            <label class="srm-label">Date</label>
+            <input type="date" id="projectDate" class="srm-input">
+          </div>
+          <div>
+            <label class="srm-label">Ingénieur responsable</label>
+            <input type="text" id="projectEngineer" class="srm-input" placeholder="Nom...">
+          </div>
+        </div>
+      </div>
+
+      <!-- Add node -->
+      <div class="srm-card">
+        <div class="section-title">
+          <span class="section-icon" style="background:var(--srm-blue-light);color:var(--srm-blue);"><i class="fa-solid fa-plus-circle"></i></span>
+          Ajouter un Nœud
+        </div>
+        <form id="nodeForm" onsubmit="addNodeRow(event)">
+          <div class="form-row cols-4">
+            <div>
+              <label class="srm-label">Type de nœud</label>
+              <select id="nodeType" class="srm-select" onchange="toggleInputsBasedOnType()" required>
+                <option value="" selected disabled>Choisir...</option>
+                <option value="N">N (Nœud normal)</option>
+                <option value="VC">VC (Vanne Cheval)</option>
+                <option value="PI">PI (Poteau Incendie)</option>
+                <option value="RN">RN (Raccordement Normal)</option>
+                <option value="R">R (Raccordement)</option>
+              </select>
             </div>
-            <div class="mb-3">
-                <label class="form-label fw-bold">Mot de passe</label>
-                <input type="password" id="password" class="form-control" required autocomplete="current-password">
+            <div>
+              <label class="srm-label">Numéro / Index</label>
+              <input type="text" id="nodeNumber" class="srm-input" placeholder="Ex: 1, A..." required>
             </div>
-            <button type="submit" class="btn btn-primary w-100 fw-bold">Se connecter</button>
+            <div>
+              <label class="srm-label">Conduite Source</label>
+              <select id="nodeSource" class="srm-select" required>
+                <option value="" selected disabled>Diamètre...</option>
+              </select>
+            </div>
+            <div>
+              <label class="srm-label">Conduite Projetée</label>
+              <select id="nodeProj" class="srm-select" required>
+                <option value="" selected disabled>Diamètre...</option>
+              </select>
+            </div>
+          </div>
+          <button type="submit" class="srm-btn-primary srm-btn-green">
+            <i class="fa-solid fa-plus"></i> Insérer le nœud
+          </button>
         </form>
-    </div>
-</div>
- 
-<div id="appScreen" class="container mt-3 d-none">
-    <div class="header-title d-flex align-items-center justify-content-center gap-4 flex-wrap text-center">
-        <div class="d-flex flex-column align-items-center">
-            <img src="image.png" alt="Logo" class="logo-header" onerror="this.src='assets/image.png';">
-            <div class="admin-text admin-text-header mt-2">
-                DP AC HH<br>
-                DET / DEP
-            </div>
-        </div>
-        <div class="border-start ps-3 d-none d-sm-block" style="border-color: rgba(255,255,255,0.3) !important;">
-            <div class="admin-text text-start text-white opacity-75 mb-2" style="font-size:0.7rem;">
-                Direction prefectorale AIN CHOCK HAY HASSANI<br>
-                DEPARTEMENT ETUDE ET TRAVAUX | DIVISION EAU POTABLE
-            </div>
-            <h2 class="mb-0 text-start">Liste des materiels & des Equipements AEP</h2>
-        </div>
-        <div class="d-block d-sm-none">
-            <h2 class="mb-0">Liste des materiels & Equipements AEP</h2>
-        </div>
-    </div>
- 
-    <div class="card border-primary" id="uploadCard">
-        <h5 class="card-title text-primary mb-2">📁 Fichier de Reference (Base de donnees)</h5>
-        <div id="dbStatusMessage" class="alert alert-info py-2 small mb-2">Verification de la base de donnees locale...</div>
-        <div id="uploadInputContainer" class="d-none">
-            <p class="text-muted small mb-2">Selectionnez le fichier <code class="fw-bold">NOEUD TYPE3.xlsx</code> pour l'enregistrer definitivement.</p>
-            <input type="file" class="form-control form-control-sm" id="excelRefFile" accept=".xlsx, .xls, .csv" onchange="handleRefExcel(event)">
-        </div>
-        <div id="dbActions" class="d-none mt-1">
-            <button class="btn btn-sm btn-outline-danger py-1" onclick="clearLocalDB()">🔄 Changer / Mettre a jour le fichier Excel</button>
-        </div>
-        <div id="uploadError" class="mt-2 text-danger fw-bold small d-none">❌ Erreur de structure (colonnes Noeud, Source, Projete manquantes ou deuxieme feuille introuvable).</div>
-    </div>
- 
-    <div id="mainAppContent" style="opacity: 0.2; pointer-events: none; transition: all 0.3s ease;">
-       
-        <div class="card border-start border-info border-4">
-            <h5 class="card-title text-info mb-3">📋 Informations Generales du Projet</h5>
-            <div class="row g-2">
-                <div class="col-12 col-sm-6">
-                    <label class="form-label fw-bold mb-1">Nom du projet</label>
-                    <input type="text" id="projectName" class="form-control form-control-sm" placeholder="Ex: Renouvellement Secteur...">
-                </div>
-                <div class="col-6 col-sm-3">
-                    <label class="form-label fw-bold mb-1">Commune</label>
-                    <select id="projectCommune" class="form-select form-select-sm">
-                        <option value="" selected disabled>Choisir...</option>
-                        <option value="AC">Ain Chock (AC)</option>
-                        <option value="HH">Hay Hassani (HH)</option>
-                    </select>
-                </div>
-                <div class="col-6 col-sm-3">
-                    <label class="form-label fw-bold mb-1">Date</label>
-                    <input type="date" id="projectDate" class="form-control form-control-sm">
-                </div>
-            </div>
-        </div>
- 
-        <div class="card">
-            <h5 class="card-title text-primary mb-3">➕ Ajouter un noeud</h5>
-            <form id="nodeForm" class="row g-2" onsubmit="addNodeRow(event)">
-                <div class="col-6 col-md-3">
-                    <label class="form-label fw-bold mb-1">Type de noeud</label>
-                    <select id="nodeType" class="form-select form-select-sm" onchange="toggleInputsBasedOnType()" required>
-                        <option value="" selected disabled>Choisir...</option>
-                        <option value="N">N (Noeud normal)</option>
-                        <option value="VC">VC (Vanne Cheval)</option>
-                        <option value="PI">PI (Poteau Incendie)</option>
-                        <option value="RN">RN (Raccordement Normal)</option>
-                        <option value="R">R (Raccordement)</option>
-                    </select>
-                </div>
-                <div class="col-6 col-md-3">
-                    <label class="form-label fw-bold mb-1">Numero / Index</label>
-                    <input type="text" id="nodeNumber" class="form-control form-control-sm" placeholder="Ex: 1, 2, A..." required>
-                </div>
-                <div class="col-6 col-md-3">
-                    <label class="form-label fw-bold mb-1">Conduite Source</label>
-                    <select id="nodeSource" class="form-select form-select-sm" required>
-                        <option value="" selected disabled>Diametre...</option>
-                    </select>
-                </div>
-                <div class="col-6 col-md-3">
-                    <label class="form-label fw-bold mb-1">Conduite Projetee</label>
-                    <select id="nodeProj" class="form-select form-select-sm" required>
-                        <option value="" selected disabled>Diametre...</option>
-                    </select>
-                </div>
-                <div class="col-12 mt-3">
-                    <button type="submit" class="btn btn-primary btn-sm fw-bold w-100">➕ Inserer a la liste</button>
-                </div>
-            </form>
-        </div>
+      </div>
 
-        <div class="card border-start border-success border-4">
-            <h5 class="card-title text-success mb-3">➕ Ajouter conduites PVC</h5>
-            <form id="pvcForm" class="row g-2" onsubmit="addPvcRow(event)">
-                <div class="col-12 col-md-6">
-                    <label class="form-label fw-bold mb-1">Diametre Nominal (DN)</label>
-                    <select id="pvcDiameter" class="form-select form-select-sm" required>
-                        <option value="" selected disabled>Choisir le diametre...</option>
-                        <option value="75">75 mm</option>
-                        <option value="90">90 mm</option>
-                        <option value="110">110 mm</option>
-                        <option value="160">160 mm</option>
-                        <option value="225">225 mm</option>
-                        <option value="315">315 mm</option>
-                    </select>
-                </div>
-                <div class="col-12 col-md-6">
-                    <label class="form-label fw-bold mb-1">Longueur de la conduite (m)</label>
-                    <input type="number" step="any" id="pvcLength" class="form-control form-control-sm" placeholder="Ex: 150, 45.5..." required min="0.01">
-                </div>
-                <div class="col-12 mt-3">
-                    <button type="submit" class="btn btn-success btn-sm fw-bold w-100">➕ Inserer la conduite</button>
-                </div>
-            </form>
+      <!-- Add PVC -->
+      <div class="srm-card">
+        <div class="section-title">
+          <span class="section-icon" style="background:var(--srm-green-light);color:var(--srm-green-dark);"><i class="fa-solid fa-pipe"></i></span>
+          Ajouter Conduite PVC
         </div>
- 
-        <div class="mb-3 btn-group-mobile text-end">
-            <button class="btn btn-sm btn-outline-secondary me-md-1" onclick="saveProject()">💾 Sauver Projet</button>
-            <input type="file" id="importFile" style="display:none" onchange="importProject(event)">
-            <button class="btn btn-sm btn-outline-secondary" onclick="document.getElementById('importFile').click()">📂 Ouvrir Projet</button>
-        </div>
- 
-        <div class="card">
-            <h5 class="card-title text-secondary mb-2">📋 Liste des elements saisis</h5>
-            <div class="table-responsive">
-                <table class="table table-striped table-hover text-center align-middle mb-0" id="saisieTable">
-                    <thead class="table-dark">
-                        <tr>
-                            <th>Element / Noeud</th>
-                            <th>Source / Diametre PVC</th>
-                            <th>Projete / Longueur (m)</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td colspan="4" class="text-muted text-center py-3">Aucun element saisi.</td>
-                        </tr>
-                    </tbody>
-                </table>
+        <form id="pvcForm" onsubmit="addPvcRow(event)">
+          <div class="form-row cols-2">
+            <div>
+              <label class="srm-label">Diamètre Nominal (DN)</label>
+              <select id="pvcDiameter" class="srm-select" required>
+                <option value="" selected disabled>Choisir le diamètre...</option>
+                <option value="75">75 mm</option>
+                <option value="90">90 mm</option>
+                <option value="110">110 mm</option>
+                <option value="160">160 mm</option>
+                <option value="225">225 mm</option>
+                <option value="315">315 mm</option>
+              </select>
             </div>
-            <div class="mt-3">
-                <button class="btn btn-success fw-bold w-100" onclick="calculateEquipments()">🔄 Lancer le Calcul Cumule</button>
+            <div>
+              <label class="srm-label">Longueur (m)</label>
+              <input type="number" step="any" id="pvcLength" class="srm-input" placeholder="Ex: 150, 45.5..." required min="0.01">
             </div>
+          </div>
+          <button type="submit" class="srm-btn-primary srm-btn-green">
+            <i class="fa-solid fa-plus"></i> Insérer la conduite
+          </button>
+        </form>
+      </div>
+
+      <!-- Save/Load -->
+      <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
+        <button class="srm-btn-primary srm-btn-sm" onclick="saveProject()" style="width:auto;flex:1;">
+          <i class="fa-solid fa-floppy-disk"></i> Sauver Projet
+        </button>
+        <input type="file" id="importFile" style="display:none;" onchange="importProject(event)">
+        <button class="srm-btn-primary srm-btn-sm" onclick="document.getElementById('importFile').click()" style="width:auto;flex:1;background:linear-gradient(135deg,#6b7c93,#4a5568);color:#fff;border:none;border-radius:8px;padding:6px 12px;font-family:Cairo,sans-serif;font-weight:700;font-size:13px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;justify-content:center;">
+          <i class="fa-solid fa-folder-open"></i> Ouvrir Projet
+        </button>
+      </div>
+
+      <!-- Saisie table -->
+      <div class="srm-card">
+        <div class="section-title">
+          <span class="section-icon" style="background:var(--srm-gray);color:var(--srm-text-muted);"><i class="fa-solid fa-list"></i></span>
+          Liste des Éléments Saisis
         </div>
- 
-        <div class="card d-none" id="resultCard">
-            <div class="d-flex flex-column mb-3">
-                <h5 class="card-title text-success fw-bold mb-2">📊 Quantites Totales Requises</h5>
-                <button onclick="exportToExcel()" class="btn btn-sm btn-outline-success fw-bold w-100">📥 Exporter vers Excel (.xlsx)</button>
-            </div>
-            <div class="table-responsive">
-                <table class="table table-bordered text-center align-middle mb-0" id="resultTable">
-                    <thead class="table-light">
-                        <tr>
-                            <th>N° Article</th>
-                            <th class="text-start">Designation Equipement / Conduite</th>
-                            <th>Quantite (U / m)</th>
-                            <th>Prix Unitaire (DH)</th>
-                            <th>Montant Total (DH)</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                    <tfoot class="table-secondary fw-bold text-primary">
-                        <tr>
-                            <td colspan="4" class="text-end text-uppercase fs-6">Total General :</td>
-                            <td id="totalGeneralCell" class="fs-6">-</td>
-                        </tr>
-                    </tfoot>
-                </table>
-           </div>
+        <div class="table-wrap">
+          <table id="saisieTable">
+            <thead>
+              <tr>
+                <th>Élément / Nœud</th>
+                <th>Source / DN PVC</th>
+                <th>Projetée / Longueur</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td colspan="4" style="color:var(--srm-text-muted);padding:20px;">Aucun élément saisi.</td></tr>
+            </tbody>
+          </table>
         </div>
-    </div>
+        <div style="margin-top:14px;">
+          <button class="srm-btn-primary srm-btn-green" onclick="calculateEquipments()" style="font-size:15px;padding:12px;">
+            <i class="fa-solid fa-calculator"></i> Lancer le Calcul Cumulé
+          </button>
+        </div>
+      </div>
+
+      <!-- Results -->
+      <div class="srm-card d-none" id="resultCard">
+        <div class="section-title">
+          <span class="section-icon" style="background:var(--srm-green-light);color:var(--srm-green-dark);"><i class="fa-solid fa-chart-bar"></i></span>
+          Quantités Totales Requises
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
+          <button class="srm-btn-primary srm-btn-sm" onclick="exportToExcel()" style="width:auto;flex:1;">
+            <i class="fa-solid fa-file-excel"></i> Exporter Excel (.xlsx)
+          </button>
+          <button class="srm-btn-primary srm-btn-danger srm-btn-sm" onclick="exportToPDF()" style="width:auto;flex:1;">
+            <i class="fa-solid fa-file-pdf"></i> Exporter PDF
+          </button>
+        </div>
+        <div class="table-wrap">
+          <table id="resultTable">
+            <thead>
+              <tr>
+                <th>N° Art.</th>
+                <th style="text-align:left;">Désignation</th>
+                <th>Quantité</th>
+                <th>Prix Unit. (DH)</th>
+                <th>Montant (DH)</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+            <tfoot>
+              <tr class="total-row">
+                <td colspan="4" style="text-align:right;font-size:14px;">TOTAL GÉNÉRAL :</td>
+                <td id="totalGeneralCell" style="font-size:14px;">—</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+
+    </div><!-- /main-app-content -->
+  </div><!-- /app-content -->
+</div><!-- /app-screen -->
+
+<!-- TOAST -->
+<div id="toast" class="toast">
+  <i id="toast-icon" class="fa-solid fa-circle-check" style="color:#68d391;"></i>
+  <span id="toast-text">Succès</span>
 </div>
- 
+
 <script>
-    let dbReference = [];
-    let dbArticlesPrice = []; 
-    let tempRows = [];   
-    let finalResults = [];
-    let totalGeneralGlobal = 0;
- 
-    document.getElementById('projectDate').valueAsDate = new Date();
- 
-    function handleLogin(e) {
-        e.preventDefault();
-        const user = document.getElementById('username').value;
-        const pass = document.getElementById('password').value;
- 
-        if (user === "asaber" && pass === "Al@e16Lokmn23") {
-            document.getElementById('loginScreen').classList.add('d-none');
-            document.getElementById('appScreen').classList.remove('d-none');
-            checkLocalDatabase();
-        } else {
-            const errDiv = document.getElementById('loginError');
-            errDiv.classList.remove('d-none');
-            setTimeout(() => errDiv.classList.add('d-none'), 4000);
+// ════ LOGO ════
+const LOGO_B64 = 'data:image/png;base64,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';
+
+const USERS = {
+  "asaber":     { password:"Al@e16Lokmn23",  displayName:"A. SABER",     role:"Chargé d'Affaires" },
+  "bfathi":     { password:"Bfathi590",       displayName:"B. FATHI",     role:"Technicien" },
+  "lbencherki": { password:"Lbencherki2026", displayName:"L. BENCHERKI", role:"Responsable" }
+};
+
+let dbReference = [], dbArticlesPrice = [], tempRows = [], finalResults = [], totalGeneralGlobal = 0;
+let currentUser = null;
+
+document.addEventListener('DOMContentLoaded', function(){
+  document.getElementById('login-logo').src = LOGO_B64;
+  document.getElementById('app-logo').src = LOGO_B64;
+  document.getElementById('projectDate').valueAsDate = new Date();
+});
+
+// ════ LOGIN ════
+function handleLogin(e){
+  e.preventDefault();
+  const u = document.getElementById('username').value.trim();
+  const p = document.getElementById('password').value.trim();
+  const usr = USERS[u];
+  if(usr && usr.password === p){
+    currentUser = u;
+    document.getElementById('login-page').classList.add('d-none');
+    document.getElementById('app-screen').classList.remove('d-none');
+    document.getElementById('header-user').textContent = usr.displayName + ' — ' + usr.role;
+    document.getElementById('projectEngineer').value = usr.displayName;
+    checkLocalDatabase();
+  } else {
+    const err = document.getElementById('login-error');
+    err.classList.remove('d-none');
+    setTimeout(() => err.classList.add('d-none'), 3500);
+  }
+}
+
+function handleLogout(){
+  document.getElementById('app-screen').classList.add('d-none');
+  document.getElementById('login-page').classList.remove('d-none');
+  document.getElementById('username').value = '';
+  document.getElementById('password').value = '';
+  currentUser = null;
+}
+
+// ════ DATABASE ════
+function checkLocalDatabase(){
+  const localData = localStorage.getItem('aep_db_reference');
+  const localArticles = localStorage.getItem('aep_db_articles');
+  const msgDiv = document.getElementById('db-status');
+  if(localData){
+    try{
+      dbReference = JSON.parse(localData);
+      dbArticlesPrice = localArticles ? JSON.parse(localArticles) : [];
+      msgDiv.className = 'alert alert-success';
+      msgDiv.innerHTML = '✅ Base de données Excel chargée avec succès.';
+      document.getElementById('upload-input').classList.add('d-none');
+      document.getElementById('db-actions').classList.remove('d-none');
+      populateDropdowns();
+      activateMainApp();
+    } catch(e){ clearLocalDB(); }
+  } else {
+    msgDiv.className = 'alert alert-warning';
+    msgDiv.innerHTML = '⚠️ Aucune base de données. Veuillez charger le fichier Excel.';
+    document.getElementById('upload-input').classList.remove('d-none');
+    document.getElementById('db-actions').classList.add('d-none');
+    deactivateMainApp();
+  }
+}
+
+function clearLocalDB(){
+  localStorage.removeItem('aep_db_reference');
+  localStorage.removeItem('aep_db_articles');
+  dbReference = []; dbArticlesPrice = [];
+  checkLocalDatabase();
+}
+
+function activateMainApp(){
+  const m = document.getElementById('main-app-content');
+  m.style.opacity = '1'; m.style.pointerEvents = 'auto';
+}
+function deactivateMainApp(){
+  const m = document.getElementById('main-app-content');
+  m.style.opacity = '0.25'; m.style.pointerEvents = 'none';
+}
+
+function handleRefExcel(e){
+  const file = e.target.files[0]; if(!file) return;
+  document.getElementById('upload-error').classList.add('d-none');
+  const reader = new FileReader();
+  reader.onload = function(evt){
+    try{
+      const data = evt.target.result;
+      const workbook = XLSX.read(data, {type:'binary'});
+      const ws = workbook.Sheets[workbook.SheetNames[0]];
+      const jsonRows = XLSX.utils.sheet_to_json(ws, {defval:""});
+      if(jsonRows.length === 0) throw new Error("Vide");
+      let cleaned = jsonRows.map(row => {
+        let r = {};
+        for(let k in row){
+          let ck = k.trim();
+          if(ck === "Conduite source") ck = "Source";
+          if(ck === "Conduite projete" || ck === "Conduite projetee") ck = "Projete";
+          r[ck] = row[k];
         }
-    }
- 
-    function checkLocalDatabase() {
-        const localData = localStorage.getItem('aep_db_reference');
-        const localArticles = localStorage.getItem('aep_db_articles');
-        const msgDiv = document.getElementById('dbStatusMessage');
-       
-        if (localData) {
-            try {
-                dbReference = JSON.parse(localData);
-                dbArticlesPrice = localArticles ? JSON.parse(localArticles) : [];
-                msgDiv.className = "alert alert-success py-2 small mb-1";
-                msgDiv.innerHTML = "✅ Base de donnees Excel chargee en local.";
-                document.getElementById('uploadInputContainer').classList.add('d-none');
-                document.getElementById('dbActions').classList.remove('d-none');
-                populateDropdowns();
-                activateMainApp();
-            } catch(e) {
-                clearLocalDB();
-            }
-        } else {
-            msgDiv.className = "alert alert-warning py-2 small mb-1";
-            msgDiv.innerHTML = "⚠️ Aucune base de donnees en memoire. Veuillez charger le fichier Excel.";
-            document.getElementById('uploadInputContainer').classList.remove('d-none');
-            document.getElementById('dbActions').classList.add('d-none');
-            deactivateMainApp();
-        }
-    }
- 
-    function clearLocalDB() {
-        localStorage.removeItem('aep_db_reference');
-        localStorage.removeItem('aep_db_articles');
-        dbReference = [];
-        dbArticlesPrice = [];
-        checkLocalDatabase();
-    }
- 
-    let style = document.getElementById('mainAppContent').style;
-    function activateMainApp() {
-        style.opacity = "1";
-        style.pointerEvents = "auto";
-    }
- 
-    function deactivateMainApp() {
-        style.opacity = "0.2";
-        style.pointerEvents = "none";
-    }
- 
-    function handleRefExcel(e) {
-        const file = e.target.files[0];
-        if (!file) return;
-        document.getElementById('uploadError').classList.add('d-none');
- 
-        const reader = new FileReader();
-        reader.onload = function(evt) {
-            try {
-                const data = evt.target.result;
-                const workbook = XLSX.read(data, { type: 'binary' });
-                
-                const firstSheetName = workbook.SheetNames[0];
-                const worksheet = workbook.Sheets[firstSheetName];
-                const jsonRows = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
-               
-                if(jsonRows.length === 0) throw new Error("Vide");
- 
-                let cleanedData = jsonRows.map(row => {
-                    let cleanedRow = {};
-                    for (let key in row) {
-                        let cleanKey = key.trim();
-                        if (cleanKey === "Noeud" || cleanKey === "Noeud") cleanKey = "Noeud";
-                        if (cleanKey === "Conduite source") cleanKey = "Source";
-                        if (cleanKey === "Conduite projete" || cleanKey === "Conduite projetee") cleanKey = "Projete";
-                        cleanedRow[cleanKey] = row[key];
-                    }
-                    return cleanedRow;
-                });
- 
-                if (!cleanedData[0].hasOwnProperty('Noeud')) {
-                    throw new Error("Champs invalides");
-                }
- 
-                let cleanedArticles = [];
-                if (workbook.SheetNames.length > 1) {
-                    const secondSheetName = workbook.SheetNames[1];
-                    const secondWorksheet = workbook.Sheets[secondSheetName];
-                    const jsonArticles = XLSX.utils.sheet_to_json(secondWorksheet, { defval: "" });
-                    
-                    cleanedArticles = jsonArticles.map(row => {
-                        let cleanedRow = {};
-                        for (let key in row) {
-                            let cleanKey = key.trim();
-                            cleanedRow[cleanKey] = String(row[key]).trim();
-                        }
-                        return cleanedRow;
-                    });
-                }
- 
-                localStorage.setItem('aep_db_reference', JSON.stringify(cleanedData));
-                localStorage.setItem('aep_db_articles', JSON.stringify(cleanedArticles));
-                checkLocalDatabase();
-            } catch (err) {
-                console.error(err);
-                document.getElementById('uploadError').classList.remove('d-none');
-            }
-        };
-        reader.readAsBinaryString(file);
-    }
- 
-    function populateDropdowns() {
-        const sources = [...new Set(dbReference.map(r => String(r['Source']).trim()).filter(s => s !== "" && s !== "undefined"))].sort((a,b) => parseFloat(a)-parseFloat(b));
-        const projets = [...new Set(dbReference.map(r => String(r['Projete']).trim()).filter(p => p !== "" && p !== "undefined"))].sort((a,b) => parseFloat(a)-parseFloat(b));
-        buildSelectOptions('nodeSource', sources);
-        buildSelectOptions('nodeProj', projets);
-    }
- 
-    function buildSelectOptions(elementId, list) {
-        const select = document.getElementById(elementId);
-        select.innerHTML = '<option value="" selected disabled>Filtre...</option>';
-        list.forEach(item => {
-            if (item && item !== "undefined" && item !== "null") {
-                select.innerHTML += `<option value="${item}">${item} mm</option>`;
-            }
+        return r;
+      });
+      if(!cleaned[0].hasOwnProperty('Noeud')) throw new Error("Champs invalides");
+      let cleanedArticles = [];
+      if(workbook.SheetNames.length > 1){
+        const ws2 = workbook.Sheets[workbook.SheetNames[1]];
+        cleanedArticles = XLSX.utils.sheet_to_json(ws2, {defval:""}).map(row => {
+          let r = {};
+          for(let k in row) r[k.trim()] = String(row[k]).trim();
+          return r;
         });
+      }
+      localStorage.setItem('aep_db_reference', JSON.stringify(cleaned));
+      localStorage.setItem('aep_db_articles', JSON.stringify(cleanedArticles));
+      checkLocalDatabase();
+    } catch(err){
+      console.error(err);
+      document.getElementById('upload-error').classList.remove('d-none');
     }
- 
-    function toggleInputsBasedOnType() {
-        const type = document.getElementById('nodeType').value;
-        const sourceSelect = document.getElementById('nodeSource');
-        const projSelect = document.getElementById('nodeProj');
-        
-        if (type === "VC" || type === "PI") {
-            sourceSelect.removeAttribute('required');
-            sourceSelect.value = ""; 
-            sourceSelect.setAttribute('disabled', 'disabled'); 
-            
-            projSelect.setAttribute('required', 'required');
-            projSelect.removeAttribute('disabled');
-        } else if (type === "R") {
-            projSelect.removeAttribute('required');
-            projSelect.value = ""; 
-            projSelect.setAttribute('disabled', 'disabled'); 
-            
-            sourceSelect.setAttribute('required', 'required');
-            sourceSelect.removeAttribute('disabled');
-        } else {
-            sourceSelect.setAttribute('required', 'required');
-            sourceSelect.removeAttribute('disabled'); 
-            
-            projSelect.setAttribute('required', 'required');
-            projSelect.removeAttribute('disabled');
-        }
+  };
+  reader.readAsBinaryString(file);
+}
+
+function populateDropdowns(){
+  const sources = [...new Set(dbReference.map(r => String(r['Source']).trim()).filter(s => s && s !== "undefined"))].sort((a,b) => parseFloat(a)-parseFloat(b));
+  const projets = [...new Set(dbReference.map(r => String(r['Projete']).trim()).filter(p => p && p !== "undefined"))].sort((a,b) => parseFloat(a)-parseFloat(b));
+  buildSelectOptions('nodeSource', sources);
+  buildSelectOptions('nodeProj', projets);
+}
+
+function buildSelectOptions(id, list){
+  const sel = document.getElementById(id);
+  sel.innerHTML = '<option value="" selected disabled>Diamètre...</option>';
+  list.forEach(item => {
+    if(item && item !== "undefined") sel.innerHTML += `<option value="${item}">${item} mm</option>`;
+  });
+}
+
+function toggleInputsBasedOnType(){
+  const type = document.getElementById('nodeType').value;
+  const src = document.getElementById('nodeSource');
+  const prj = document.getElementById('nodeProj');
+  if(type === "VC" || type === "PI"){
+    src.removeAttribute('required'); src.value = ""; src.setAttribute('disabled','disabled');
+    prj.setAttribute('required','required'); prj.removeAttribute('disabled');
+  } else if(type === "R"){
+    prj.removeAttribute('required'); prj.value = ""; prj.setAttribute('disabled','disabled');
+    src.setAttribute('required','required'); src.removeAttribute('disabled');
+  } else {
+    src.setAttribute('required','required'); src.removeAttribute('disabled');
+    prj.setAttribute('required','required'); prj.removeAttribute('disabled');
+  }
+}
+
+function addNodeRow(e){
+  e.preventDefault();
+  const baseType = document.getElementById('nodeType').value;
+  const userNum = document.getElementById('nodeNumber').value.trim();
+  const source = document.getElementById('nodeSource').value;
+  const proj = document.getElementById('nodeProj').value;
+  tempRows.push({entryType:'node', type:baseType+userNum, baseType, userNum, source, proj});
+  renderSaisieTable();
+  document.getElementById('nodeForm').reset();
+  toggleInputsBasedOnType();
+}
+
+function addPvcRow(e){
+  e.preventDefault();
+  const diameter = document.getElementById('pvcDiameter').value;
+  const length = document.getElementById('pvcLength').value.trim();
+  tempRows.push({entryType:'pvc', type:'PVC DN'+diameter, baseType:'PVC', userNum:'', source:diameter, proj:length});
+  renderSaisieTable();
+  document.getElementById('pvcForm').reset();
+}
+
+function renderSaisieTable(){
+  const tbody = document.querySelector('#saisieTable tbody');
+  if(tempRows.length === 0){
+    tbody.innerHTML = '<tr><td colspan="4" style="color:#999;padding:20px;">Aucun élément saisi.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = '';
+  tempRows.forEach((row, i) => {
+    const badge = row.entryType === 'node' ? `<span class="badge-node">${row.type}</span>` : `<span class="badge-pvc">${row.type}</span>`;
+    const src = row.entryType === 'node' ? (row.source ? row.source+' mm' : '—') : row.source+' mm';
+    const prj = row.entryType === 'node' ? (row.proj ? row.proj+' mm' : '—') : row.proj+' m';
+    tbody.innerHTML += `<tr>
+      <td>${badge}</td>
+      <td>${src}</td>
+      <td>${prj}</td>
+      <td>
+        <div style="display:flex;gap:4px;justify-content:center;">
+          <button onclick="editRow(${i})" style="padding:3px 8px;border-radius:5px;border:none;background:#f6c90e;cursor:pointer;font-size:12px;">✏️</button>
+          <button onclick="deleteRow(${i})" style="padding:3px 8px;border-radius:5px;border:none;background:#e53e3e;color:#fff;cursor:pointer;font-size:12px;">✕</button>
+        </div>
+      </td>
+    </tr>`;
+  });
+}
+
+function deleteRow(i){ tempRows.splice(i,1); renderSaisieTable(); }
+
+function editRow(i){
+  const row = tempRows[i];
+  if(row.entryType === 'pvc'){
+    document.getElementById('pvcDiameter').value = row.source;
+    document.getElementById('pvcLength').value = row.proj;
+  } else {
+    document.getElementById('nodeType').value = row.baseType;
+    toggleInputsBasedOnType();
+    setTimeout(() => {
+      document.getElementById('nodeNumber').value = row.userNum;
+      document.getElementById('nodeSource').value = row.source;
+      document.getElementById('nodeProj').value = row.proj;
+    }, 100);
+  }
+  deleteRow(i);
+}
+
+function calculateEquipments(){
+  if(tempRows.length === 0){ alert('Veuillez ajouter au moins un élément !'); return; }
+  let summary = {}, pvcSummary = {}, totalPvcLength = 0;
+  const equipCols = Object.keys(dbReference[0] || {}).filter(k => k !== 'Noeud' && k !== 'Source' && k !== 'Projete');
+  
+  tempRows.forEach(row => {
+    if(row.entryType === 'pvc'){
+      const len = parseFloat(row.proj);
+      if(!isNaN(len)){ pvcSummary[row.source] = (pvcSummary[row.source]||0)+len; totalPvcLength+=len; }
+      return;
     }
- 
-    function addNodeRow(e) {
-        e.preventDefault();
-        const typeBase = document.getElementById('nodeType').value;
-        const userNumber = document.getElementById('nodeNumber').value.trim(); 
-        const source = document.getElementById('nodeSource').value;
-        const proj = document.getElementById('nodeProj').value;
-        
-        const nodeCustomLabel = typeBase + userNumber;
- 
-        tempRows.push({ entryType: 'node', type: nodeCustomLabel, baseType: typeBase, userNum: userNumber, source, proj });
-        renderSaisieTable();
-        document.getElementById('nodeForm').reset();
-        toggleInputsBasedOnType(); 
+    const match = dbReference.find(r => {
+      const et = String(r['Noeud']).trim().toUpperCase();
+      let typeMatch = row.baseType==="RN" ? et.startsWith("RN") : row.baseType==="R" ? (et.startsWith("R")&&!et.startsWith("RN")) : et.startsWith(row.baseType.toUpperCase());
+      const es = r['Source'] ? String(r['Source']).trim() : "";
+      const ep = r['Projete'] ? String(r['Projete']).trim() : "";
+      if(row.baseType==="VC"||row.baseType==="PI") return typeMatch && ep===String(row.proj).trim();
+      if(row.baseType==="R") return typeMatch && es===String(row.source).trim();
+      return typeMatch && es===String(row.source).trim() && ep===String(row.proj).trim();
+    });
+    if(match) equipCols.forEach(col => { const v=parseFloat(match[col]); if(!isNaN(v)&&v>0) summary[col]=(summary[col]||0)+v; });
+  });
+
+  totalGeneralGlobal = 0; finalResults = [];
+  
+  Object.keys(summary).forEach(key => {
+    const artMatch = dbArticlesPrice.find(a => a['DESIGNATION'] && String(a['DESIGNATION']).trim().toUpperCase().replace(/\s+/g,' ')===key.trim().toUpperCase().replace(/\s+/g,' '));
+    const qty = summary[key];
+    const up = artMatch ? parseFloat(artMatch['PRIX']) : 0;
+    const m = !isNaN(up) ? qty*up : 0;
+    totalGeneralGlobal += m;
+    finalResults.push({article:artMatch?artMatch['ARTICLE']:'—', designation:key, qty, isPvc:false, isGrillage:false, prix:artMatch&&!isNaN(up)?up:'—', montant:m>0?m:'—'});
+  });
+
+  Object.keys(pvcSummary).forEach(dn => {
+    const target = `TUYAUX PVC PN 16 Ø${dn}`.toUpperCase().replace(/\s+/g,' ');
+    const artMatch = dbArticlesPrice.find(a => {
+      if(!a['DESIGNATION']) return false;
+      const d = String(a['DESIGNATION']).trim().toUpperCase().replace(/\s+/g,' ');
+      return d===target||d.includes(target)||target.includes(d);
+    });
+    const len = pvcSummary[dn];
+    const up = artMatch ? parseFloat(artMatch['PRIX']) : 0;
+    const m = !isNaN(up) ? len*up : 0;
+    totalGeneralGlobal += m;
+    finalResults.push({article:artMatch?artMatch['ARTICLE']:'—', designation:`TUYAUX PVC PN 16 Ø${dn}`, qty:len, isPvc:true, isGrillage:false, prix:artMatch&&!isNaN(up)?up:'—', montant:m>0?m:'—'});
+  });
+
+  if(totalPvcLength > 0){
+    const gk = "GRILLAGE AVERTISSEUR";
+    const artMatch = dbArticlesPrice.find(a => a['DESIGNATION'] && String(a['DESIGNATION']).trim().toUpperCase().includes(gk));
+    const up = artMatch ? parseFloat(artMatch['PRIX']) : 0;
+    const m = !isNaN(up) ? totalPvcLength*up : 0;
+    totalGeneralGlobal += m;
+    finalResults.push({article:artMatch?artMatch['ARTICLE']:'—', designation:gk, qty:totalPvcLength, isPvc:false, isGrillage:true, prix:artMatch&&!isNaN(up)?up:'—', montant:m>0?m:'—'});
+  }
+
+  const tbody = document.querySelector('#resultTable tbody');
+  tbody.innerHTML = '';
+  if(finalResults.length === 0){
+    tbody.innerHTML = '<tr><td colspan="5" style="color:#e53e3e;padding:16px;">Aucune pièce trouvée. Vérifiez les diamètres.</td></tr>';
+    document.getElementById('totalGeneralCell').textContent = '—';
+  } else {
+    finalResults.forEach(res => {
+      const qtyUnit = (res.isPvc||res.isGrillage) ? ' m' : '';
+      const rowCls = res.isPvc ? 'result-pvc' : res.isGrillage ? 'result-grillage' : '';
+      tbody.innerHTML += `<tr class="${rowCls}">
+        <td style="color:var(--srm-text-muted);font-weight:700;">${res.article}</td>
+        <td style="text-align:left;font-weight:600;">${res.designation}</td>
+        <td><span class="qty-badge">${res.qty.toFixed(2)}${qtyUnit}</span></td>
+        <td class="price-cell">${res.prix!=='—'?res.prix.toFixed(2):'—'}</td>
+        <td class="total-cell">${res.montant!=='—'?res.montant.toFixed(2):'—'}</td>
+      </tr>`;
+    });
+    document.getElementById('totalGeneralCell').textContent = totalGeneralGlobal.toFixed(2) + ' DH';
+  }
+  document.getElementById('resultCard').classList.remove('d-none');
+  document.getElementById('resultCard').scrollIntoView({behavior:'smooth'});
+}
+
+// ════ SAVE / LOAD ════
+function saveProject(){
+  if(tempRows.length === 0){ alert('Aucune donnée !'); return; }
+  const pkg = {
+    metadata: {name:document.getElementById('projectName').value, commune:document.getElementById('projectCommune').value, date:document.getElementById('projectDate').value, engineer:document.getElementById('projectEngineer').value},
+    rows: tempRows
+  };
+  const a = document.createElement('a');
+  a.href = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(pkg));
+  a.download = `Backup_AEP_${pkg.metadata.commune||'Projet'}.json`;
+  a.click();
+}
+
+function importProject(e){
+  const reader = new FileReader();
+  reader.onload = function(){
+    try{
+      const imp = JSON.parse(reader.result);
+      if(imp.metadata){
+        document.getElementById('projectName').value = imp.metadata.name||'';
+        document.getElementById('projectCommune').value = imp.metadata.commune||'';
+        document.getElementById('projectDate').value = imp.metadata.date||'';
+        document.getElementById('projectEngineer').value = imp.metadata.engineer||'';
+        tempRows = imp.rows||[];
+      } else { tempRows = imp; }
+      renderSaisieTable();
+      showToast('Projet restauré avec succès.');
+    } catch(ex){ alert('Fichier invalide.'); }
+  };
+  reader.readAsText(e.target.files[0]);
+}
+
+// ════ EXCEL EXPORT ════
+function exportToExcel(){
+  if(tempRows.length === 0) return;
+  const proj = document.getElementById('projectName').value||'Non spécifié';
+  const com = document.getElementById('projectCommune').value||'';
+  const dat = document.getElementById('projectDate').value||'';
+  const eng = document.getElementById('projectEngineer').value||'';
+  const dataSaisie = [
+    ["Projet:",proj,"Commune:",com,"Date:",dat,"Ingénieur:",eng],[],
+    ["Élément/Nœud","Source/DN","Projetée/Longueur","Type"],
+    ...tempRows.map(r => [r.type, r.source+(r.entryType==='pvc'?' mm':' mm'), r.proj+(r.entryType==='pvc'?' m':' mm'), r.entryType==='pvc'?'Conduite':'Nœud'])
+  ];
+  const dataRes = [
+    ["Projet:",proj,"Commune:",com,"Date:",dat],[],
+    ["N° Article","Désignation","Quantité","Prix Unit. (DH)","Montant (DH)"],
+    ...finalResults.map(r => [r.article, r.designation, r.qty, r.prix!=='—'?r.prix:'—', r.montant!=='—'?r.montant:'—']),
+    ["","","","Total Général:",totalGeneralGlobal>0?totalGeneralGlobal:'—']
+  ];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(dataSaisie), "Saisie Globale");
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(dataRes), "Récapitulatif Matériel");
+  XLSX.writeFile(wb, `Export_AEP_${com}_${dat.replace(/-/g,'')}.xlsx`);
+}
+
+// ════ PDF EXPORT ════
+function exportToPDF(){
+  if(finalResults.length === 0){ alert('Lancez le calcul avant d\'exporter !'); return; }
+  const proj = document.getElementById('projectName').value||'Non spécifié';
+  const com = document.getElementById('projectCommune').value||'';
+  const dat = document.getElementById('projectDate').value||'';
+  const eng = document.getElementById('projectEngineer').value||'';
+  const user_name = currentUser ? (USERS[currentUser]?.displayName||currentUser) : '—';
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('fr-FR');
+  const timeStr = now.toLocaleTimeString('fr-FR');
+
+  const qrContent = 
+    'Projet: '+proj+
+    '\nCommune: '+(com||'—')+
+    '\nIngénieur: '+eng+
+    '\nSaisie par: '+user_name+
+    '\nDate export: '+dateStr+' '+timeStr+
+    '\nNb éléments: '+tempRows.length+
+    '\nTotal général: '+totalGeneralGlobal.toFixed(2)+' DH';
+
+  function fetchQR(text, callback){
+    var shortText = text.substring(0, 500);
+    var encoded = encodeURIComponent(shortText);
+    // Primary: qrserver.com
+    var url1 = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&ecc=M&data=' + encoded;
+    // Fallback: Google Charts
+    var url2 = 'https://chart.googleapis.com/chart?chs=200x200&cht=qr&choe=UTF-8&chl=' + encoded;
+
+    function urlToDataURL(url, cb){
+      var img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = function(){
+        try{
+          var canvas = document.createElement('canvas');
+          canvas.width = 200; canvas.height = 200;
+          canvas.getContext('2d').drawImage(img, 0, 0, 200, 200);
+          cb(canvas.toDataURL('image/png'));
+        } catch(e){ cb(null); }
+      };
+      img.onerror = function(){ cb(null); };
+      setTimeout(function(){ if(!img.complete) cb(null); }, 6000);
+      img.src = url;
     }
 
-    function addPvcRow(e) {
-        e.preventDefault();
-        const diameter = document.getElementById('pvcDiameter').value;
-        const length = document.getElementById('pvcLength').value.trim();
+    urlToDataURL(url1, function(data){
+      if(data){ callback(data); return; }
+      // Try fallback
+      urlToDataURL(url2, function(data2){
+        callback(data2); // may be null, PDF will show empty box
+      });
+    });
+  }
 
-        tempRows.push({ entryType: 'pvc', type: 'PVC DN' + diameter, baseType: 'PVC', userNum: '', source: diameter, proj: length });
-        renderSaisieTable();
-        document.getElementById('pvcForm').reset();
+  showToast('Génération du PDF en cours...');
+  fetchQR(qrContent, function(qrDataUrl){
+    try{ _doPDF(qrDataUrl, proj, com, dat, eng, user_name, dateStr); }
+    catch(err){ console.error('PDF:', err); showToast('Erreur PDF: '+err.message, 'error'); }
+  });
+}
+
+function _doPDF(qrDataUrl, proj, com, dat, eng, user_name, dateStr){
+  const {jsPDF} = window.jspdf;
+  const doc = new jsPDF('p','mm','a4');
+  const pW = doc.internal.pageSize.getWidth();
+  const pH = doc.internal.pageSize.getHeight();
+  const B=[43,127,193], G=[77,176,91], O=[232,130,62], DARK=[30,45,61], LB=[232,244,253], GR=[244,246,249];
+
+  function hdr(){
+    doc.setFillColor(...B); doc.rect(0,0,pW,18,'F');
+    try{ if(LOGO_B64) doc.addImage(LOGO_B64,'PNG',3,2,13,13); }catch(e){}
+    doc.setTextColor(255,255,255);
+    doc.setFontSize(6); doc.setFont(undefined,'bold');
+    doc.text('DIRECTION PRÉFECTORALE',20,5);
+    doc.text('AIN CHOCK HAY HASSANI',20,9);
+    doc.setFontSize(5.5); doc.setFont(undefined,'normal');
+    doc.text('DÉPARTEMENT ÉTUDES ET TRAVAUX',20,12.5);
+    doc.text('DIVISION EAU POTABLE',20,16);
+    doc.setFontSize(8); doc.setFont(undefined,'bold');
+    doc.text(proj.toUpperCase(),pW/2,10,{align:'center'});
+    if(qrDataUrl){
+      try{ doc.addImage(qrDataUrl,'PNG',pW-18,1.5,14,14); }catch(e){}
+    } else {
+      doc.setDrawColor(...B); doc.setLineWidth(0.3); doc.rect(pW-18,1.5,14,14);
+      doc.setTextColor(200,225,245); doc.setFontSize(5);
+      doc.text('QR',pW-11,9.5,{align:'center'});
     }
- 
-    function renderSaisieTable() {
-        const tbody = document.querySelector('#saisieTable tbody');
-        if (tempRows.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="4" class="text-muted text-center py-3">Aucun element saisi.</td></tr>`;
-            return;
-        }
-        tbody.innerHTML = '';
-        tempRows.forEach((row, index) => {
-            const isNode = row.entryType === 'node';
-            const badgeClass = isNode ? 'bg-primary' : 'bg-success';
-            const sourceDisplay = isNode ? (row.source ? row.source + ' mm' : '-') : (row.source + ' mm');
-            const projDisplay = isNode ? (row.proj ? row.proj + ' mm' : '-') : (row.proj + ' m');
+    doc.setTextColor(...DARK); doc.setFont(undefined,'normal');
+  }
 
-            tbody.innerHTML += `
-                <tr>
-                    <td><span class="badge ${badgeClass} badge-type">${row.type}</span></td>
-                    <td>${sourceDisplay}</td>
-                    <td>${projDisplay}</td>
-                    <td>
-                        <div class="d-flex justify-content-center gap-1">
-                            <button class="btn btn-sm btn-warning py-0 px-2" onclick="editRow(${index})">📝</button>
-                            <button class="btn btn-sm btn-danger py-0 px-2" onclick="deleteRow(${index})">❌</button>
-                        </div>
-                    </td>
-                </tr>`;
-        });
-    }
- 
-    function deleteRow(index) {
-        tempRows.splice(index, 1);
-        renderSaisieTable();
-    }
- 
-    function editRow(index) {
-        const row = tempRows[index];
-        if (row.entryType === 'pvc') {
-            document.getElementById('pvcDiameter').value = row.source;
-            document.getElementById('pvcLength').value = row.proj;
-        } else {
-            document.getElementById('nodeType').value = row.baseType;
-            toggleInputsBasedOnType();
-            setTimeout(() => {
-                document.getElementById('nodeNumber').value = row.userNum; 
-                document.getElementById('nodeSource').value = row.source;
-                document.getElementById('nodeProj').value = row.proj;
-            }, 100);
-        }
-        deleteRow(index);
-    }
- 
-    function calculateEquipments() {
-        if (tempRows.length === 0) {
-            alert('Veuillez ajouter au moins un element !');
-            return;
-        }
-        let summary = {};
-        let pvcSummary = {}; 
-        let totalPvcLength = 0; 
- 
-        const sampleRow = dbReference[0] || {};
-        const equipmentCols = Object.keys(sampleRow).filter(k => k !== 'Noeud' && k !== 'Source' && k !== 'Projete');
- 
-        tempRows.forEach(row => {
-            if (row.entryType === 'pvc') {
-                const dnKey = row.source; 
-                const len = parseFloat(row.proj);
-                if (!isNaN(len)) {
-                    pvcSummary[dnKey] = (pvcSummary[dnKey] || 0) + len;
-                    totalPvcLength += len; 
-                }
-                return; 
-            }
-            
-            const match = dbReference.find(r => {
-                const excelNodeType = String(r['Noeud']).trim().toUpperCase();
-                
-                let isTypeMatch = false;
-                if (row.baseType === "RN") {
-                    isTypeMatch = excelNodeType.startsWith("RN");
-                } else if (row.baseType === "R") {
-                    isTypeMatch = excelNodeType.startsWith("R") && !excelNodeType.startsWith("RN");
-                } else {
-                    isTypeMatch = excelNodeType.startsWith(row.baseType.toUpperCase());
-                }
+  function ftr(n){
+    doc.setTextColor(150,160,170); doc.setFontSize(8);
+    doc.text(String(n),pW/2,pH-3,{align:'center'});
+  }
 
-                const excelSrc = r['Source'] ? String(r['Source']).trim() : "";
-                const excelPrj = r['Projete'] ? String(r['Projete']).trim() : "";
-                
-                if (row.baseType === "VC" || row.baseType === "PI") {
-                    return isTypeMatch && (excelPrj === String(row.proj).trim());
-                } else if (row.baseType === "R") {
-                    return isTypeMatch && (excelSrc === String(row.source).trim());
-                } else {
-                    return isTypeMatch && (excelSrc === String(row.source).trim()) && (excelPrj === String(row.proj).trim());
-                }
-            });
-            if (match) {
-                equipmentCols.forEach(col => {
-                    const value = parseFloat(match[col]);
-                    if (!isNaN(value) && value > 0) summary[col] = (summary[col] || 0) + value;
-                });
-            }
-        });
- 
-        totalGeneralGlobal = 0;
-        finalResults = [];
+  hdr();
 
-        // 1. Matériels et équipements des nœuds
-        Object.keys(summary).forEach(key => {
-            const searchKeyClean = key.trim().toUpperCase().replace(/\s+/g, ' ');
-            
-            const artMatch = dbArticlesPrice.find(a => {
-                if (!a['DESIGNATION']) return false;
-                const dbDesigClean = String(a['DESIGNATION']).trim().toUpperCase().replace(/\s+/g, ' ');
-                return dbDesigClean === searchKeyClean;
-            });
+  // Sous-titre
+  doc.setFillColor(...LB); doc.roundedRect(14,20,pW-28,7,2,2,'F');
+  doc.setFontSize(8); doc.setFont(undefined,'bold'); doc.setTextColor(...B);
+  doc.text('DEVIS QUANTITATIF — ÉQUIPEMENTS & MATÉRIELS AEP',pW/2,24.8,{align:'center'});
+  doc.setTextColor(...DARK);
 
-            const qty = summary[key];
-            const unitPrice = artMatch ? parseFloat(artMatch['PRIX']) : 0;
-            const montant = !isNaN(unitPrice) ? (qty * unitPrice) : 0;
-            
-            totalGeneralGlobal += montant;
- 
-            finalResults.push({
-                article: artMatch ? artMatch['ARTICLE'] : '-',
-                designation: key,
-                qty: qty,
-                isPvc: false,
-                isGrillage: false,
-                prix: artMatch && !isNaN(unitPrice) ? unitPrice : '-',
-                montant: montant > 0 ? montant : '-'
-            });
-        });
+  let Y = 30;
 
-        // 2. Conduites PVC (TUYAUX PVC PN 16 Ø[Diameter])
-        Object.keys(pvcSummary).forEach(diameter => {
-            const targetedDesignation = `TUYAUX PVC PN 16 Ø${diameter}`;
-            const targetClean = targetedDesignation.toUpperCase().replace(/\s+/g, ' ');
-            
-            const artMatch = dbArticlesPrice.find(a => {
-                if (!a['DESIGNATION']) return false;
-                const dbDesigClean = String(a['DESIGNATION']).trim().toUpperCase().replace(/\s+/g, ' ');
-                return dbDesigClean === targetClean || dbDesigClean.includes(targetClean) || targetClean.includes(dbDesigClean);
-            });
+  // Info projet
+  doc.setFillColor(...GR); doc.roundedRect(14,Y,pW-28,6,1,1,'F');
+  doc.setFontSize(7); doc.setFont(undefined,'bold'); doc.setTextColor(...B);
+  doc.text('INFORMATIONS DU PROJET',16,Y+4.2);
+  doc.setTextColor(...DARK); Y+=8;
 
-            const totalLength = pvcSummary[diameter];
-            const unitPrice = artMatch ? parseFloat(artMatch['PRIX']) : 0;
-            const montant = !isNaN(unitPrice) ? (totalLength * unitPrice) : 0;
+  const infoData = [
+    ['Projet:',proj,'Commune:',com],
+    ['Date:',dat,'Ingénieur:',eng],
+    ['Établi par:',user_name,'Date export:',dateStr]
+  ];
+  doc.autoTable({
+    head:[],body:infoData,startY:Y,
+    styles:{fontSize:7,cellPadding:1.5},
+    columnStyles:{0:{fontStyle:'bold',textColor:B,cellWidth:25},1:{cellWidth:65},2:{fontStyle:'bold',textColor:B,cellWidth:25},3:{cellWidth:65}},
+    margin:{left:14,right:14},tableWidth:pW-28,
+  });
+  Y = doc.lastAutoTable.finalY + 4;
 
-            totalGeneralGlobal += montant;
+  // Résultats
+  doc.setFillColor(...B); doc.roundedRect(14,Y,pW-28,6,1,1,'F');
+  doc.setFontSize(7); doc.setFont(undefined,'bold'); doc.setTextColor(255,255,255);
+  doc.text('RÉCAPITULATIF DES QUANTITÉS ET MONTANTS',16,Y+4.2);
+  Y+=8;
 
-            finalResults.push({
-                article: artMatch ? artMatch['ARTICLE'] : '-',
-                designation: targetedDesignation, 
-                qty: totalLength,
-                isPvc: true,
-                isGrillage: false,
-                prix: artMatch && !isNaN(unitPrice) ? unitPrice : '-',
-                montant: montant > 0 ? montant : '-'
-            });
-        });
+  const resBody = finalResults.map(r => [
+    r.article,
+    r.designation,
+    r.qty.toFixed(2) + (r.isPvc||r.isGrillage?' m':' u'),
+    r.prix!=='—'?r.prix.toFixed(2):'-',
+    r.montant!=='—'?r.montant.toFixed(2):'-'
+  ]);
+  resBody.push(['','','','TOTAL GÉNÉRAL (DH):',totalGeneralGlobal.toFixed(2)]);
 
-        // 3. GRILLAGE AVERTISSEUR
-        if (totalPvcLength > 0) {
-            const grillageKey = "GRILLAGE AVERTISSEUR";
-            
-            const artMatch = dbArticlesPrice.find(a => {
-                if (!a['DESIGNATION']) return false;
-                const dbDesigClean = String(a['DESIGNATION']).trim().toUpperCase().replace(/\s+/g, ' ');
-                return dbDesigClean.includes(grillageKey) || grillageKey.includes(dbDesigClean);
-            });
+  doc.autoTable({
+    head:[['N° Art.','Désignation','Quantité','P.U. (DH)','Montant (DH)']],
+    body:resBody,startY:Y,
+    styles:{fontSize:6.5,cellPadding:1.5,overflow:'linebreak'},
+    headStyles:{fillColor:B,textColor:[255,255,255],fontStyle:'bold',fontSize:7},
+    alternateRowStyles:{fillColor:[247,251,255]},
+    columnStyles:{
+      0:{cellWidth:15,halign:'center'},
+      1:{cellWidth:'auto',halign:'left'},
+      2:{cellWidth:22,halign:'center'},
+      3:{cellWidth:25,halign:'right'},
+      4:{cellWidth:28,halign:'right',fontStyle:'bold',textColor:B}
+    },
+    didParseCell:function(d){
+      if(d.row.index===resBody.length-1){
+        d.cell.styles.fillColor=LB;
+        d.cell.styles.fontStyle='bold';
+        d.cell.styles.textColor=B;
+      }
+    },
+    margin:{left:14,right:14},tableWidth:pW-28,
+  });
 
-            const unitPrice = artMatch ? parseFloat(artMatch['PRIX']) : 0;
-            const montant = !isNaN(unitPrice) ? (totalPvcLength * unitPrice) : 0;
+  ftr(1);
+  doc.save(`Devis_AEP_${com||'Export'}_${dat?dat.replace(/-/g,''):dateStr.replace(/\//g,'')}.pdf`);
+  showToast('PDF exporté avec succès !');
+}
 
-            totalGeneralGlobal += montant;
-
-            finalResults.push({
-                article: artMatch ? artMatch['ARTICLE'] : '-',
-                designation: grillageKey,
-                qty: totalPvcLength,
-                isPvc: false,
-                isGrillage: true, 
-                prix: artMatch && !isNaN(unitPrice) ? unitPrice : '-',
-                montant: montant > 0 ? montant : '-'
-            });
-        }
- 
-        const tbody = document.querySelector('#resultTable tbody');
-        tbody.innerHTML = '';
-       
-        if (finalResults.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="5" class="text-danger py-2 small">Aucune piece trouvee. Veuillez verifier les diametres selectionnes.</td></tr>`;
-            document.getElementById('totalGeneralCell').innerText = '-';
-        } else {
-            finalResults.forEach(res => {
-                let qtyUnit = '';
-                let rowClass = '';
-                
-                if (res.isPvc) {
-                    qtyUnit = ' m';
-                    rowClass = 'table-success fw-bold'; 
-                } else if (res.isGrillage) {
-                    qtyUnit = ' m';
-                    rowClass = 'table-warning fw-bold'; 
-                }
-
-                tbody.innerHTML += `
-                    <tr class="${rowClass}">
-                        <td><span class="text-muted fw-bold">${res.article}</span></td>
-                        <td class="text-start small"><strong>${res.designation}</strong></td>
-                        <td><span class="badge bg-success fs-6">${res.qty.toFixed(2)}${qtyUnit}</span></td>
-                        <td>${res.prix !== '-' ? `<span class="text-secondary fw-bold">${res.prix.toFixed(2)}</span>` : '-'}</td>
-                        <td>${res.montant !== '-' ? `<span class="text-primary fw-bold">${res.montant.toFixed(2)}</span>` : '-'}</td>
-                    </tr>`;
-            });
-            document.getElementById('totalGeneralCell').innerText = totalGeneralGlobal.toFixed(2) + ' DH';
-        }
-        document.getElementById('resultCard').classList.remove('d-none');
-        document.getElementById('resultCard').scrollIntoView({ behavior: 'smooth' });
-    }
- 
-    function exportToExcel() {
-        if(tempRows.length === 0) return;
- 
-        const projName = document.getElementById('projectName').value || "Non specifie";
-        const commune = document.getElementById('projectCommune').value || "Non specifiee";
-        const pDate = document.getElementById('projectDate').value || "";
- 
-        const rowsSaisie = tempRows.map(r => ({ "A": r.type, "B": r.source, "C": r.proj, "D": r.entryType === 'pvc' ? 'Conduite' : 'Noeud' }));
-        const dataSaisie = [
-            ["Projet:", projName, "Commune:", commune, "Date:", pDate],
-            [],
-            ["Element / Nom du Noeud", "Source / Diametre (mm)", "Projete / Longueur", "Type"],
-            ...rowsSaisie.map(r => [r.A, r.B ? r.B + " mm" : "-", r.C ? (r.D === 'Conduite' ? r.C + " m" : r.C + " mm") : "-", r.D])
-        ];
- 
-        const rowsResultat = finalResults.map(r => ([
-            r.article, 
-            r.designation, 
-            r.qty, 
-            r.prix !== '-' ? r.prix : '-', 
-            r.montant !== '-' ? r.montant : '-'
-        ]));
-        
-        const dataResultat = [
-            ["Projet:", projName, "Commune:", commune, "Date:", pDate],
-            [],
-            ["N° Article", "Designation de l'Equipement / Conduite", "Quantite Totale", "Prix Unitaire (DH)", "Montant Total (DH)"],
-            ...rowsResultat,
-            ["", "", "", "Total General :", totalGeneralGlobal > 0 ? totalGeneralGlobal : "-"]
-        ];
- 
-        const wb = XLSX.utils.book_new();
-        const wsSaisie = XLSX.utils.aoa_to_sheet(dataSaisie);
-        const wsResultat = XLSX.utils.aoa_to_sheet(dataResultat);
- 
-        XLSX.utils.book_append_sheet(wb, wsSaisie, "Saisie Globale");
-        XLSX.utils.book_append_sheet(wb, wsResultat, "Recapitulatif Materiel");
- 
-        const fileName = `Export_AEP_${commune}_${pDate.replace(/-/g, "")}.xlsx`;
-        XLSX.writeFile(wb, fileName);
-    }
- 
-    function saveProject() {
-        if(tempRows.length === 0) return alert('Aucune donnee !');
-        const projectPackage = {
-            metadata: {
-                name: document.getElementById('projectName').value,
-                commune: document.getElementById('projectCommune').value,
-                date: document.getElementById('projectDate').value
-            },
-            rows: tempRows
-        };
-        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(projectPackage));
-        const downloadAnchor = document.createElement('a');
-        downloadAnchor.setAttribute("href", dataStr);
-        downloadAnchor.setAttribute("download", `Backup_AEP_${projectPackage.metadata.commune || 'Projet'}.json`);
-        document.body.appendChild(downloadAnchor);
-        downloadAnchor.click();
-        downloadAnchor.remove();
-    }
- 
-    function importProject(event) {
-        const input = event.target;
-        const reader = new FileReader();
-        reader.onload = function(){
-            try {
-                const imported = JSON.parse(reader.result);
-                if(imported.metadata) {
-                    document.getElementById('projectName').value = imported.metadata.name || "";
-                    document.getElementById('projectCommune').value = imported.metadata.commune || "";
-                    document.getElementById('projectDate').value = imported.metadata.date || "";
-                    tempRows = imported.rows || [];
-                } else {
-                    tempRows = imported;
-                }
-                renderSaisieTable();
-                alert('Projet restaure avec succes.');
-            } catch(e) { alert('Fichier invalide.'); }
-        };
-        reader.readAsText(input.files[0]);
-    }
+// ════ TOAST ════
+function showToast(msg, type){
+  const t = document.getElementById('toast');
+  const i = document.getElementById('toast-icon');
+  document.getElementById('toast-text').textContent = msg;
+  if(type==='error'){ t.style.background='#e53e3e'; i.className='fa-solid fa-circle-xmark'; i.style.color='#fff'; }
+  else { t.style.background='var(--srm-text)'; i.className='fa-solid fa-circle-check'; i.style.color='#68d391'; }
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
 </script>
 </body>
 </html>
