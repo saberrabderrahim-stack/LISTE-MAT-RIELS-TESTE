@@ -194,10 +194,7 @@ tfoot tr{background:linear-gradient(90deg,var(--srm-blue-light),#f0f8fe);font-we
             <label class="srm-label">Date</label>
             <input type="date" id="projectDate" class="srm-input">
           </div>
-          <div>
-            <label class="srm-label">Ingénieur responsable</label>
-            <input type="text" id="projectEngineer" class="srm-input" placeholder="Nom...">
-          </div>
+
         </div>
       </div>
 
@@ -389,7 +386,6 @@ function handleLogin(e){
     document.getElementById('login-page').classList.add('d-none');
     document.getElementById('app-screen').classList.remove('d-none');
     document.getElementById('header-user').textContent = usr.displayName + ' — ' + usr.role;
-    document.getElementById('projectEngineer').value = usr.displayName;
     checkLocalDatabase();
   } else {
     const err = document.getElementById('login-error');
@@ -526,7 +522,8 @@ function addNodeRow(e){
   const userNum = document.getElementById('nodeNumber').value.trim();
   const source = document.getElementById('nodeSource').value;
   const proj = document.getElementById('nodeProj').value;
-  tempRows.push({entryType:'node', type:baseType+userNum, baseType, userNum, source, proj});
+  const ts_node = new Date().toLocaleString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  tempRows.push({entryType:'node', type:baseType+userNum, baseType, userNum, source, proj, timestamp:ts_node});
   renderSaisieTable();
   document.getElementById('nodeForm').reset();
   toggleInputsBasedOnType();
@@ -536,7 +533,8 @@ function addPvcRow(e){
   e.preventDefault();
   const diameter = document.getElementById('pvcDiameter').value;
   const length = document.getElementById('pvcLength').value.trim();
-  tempRows.push({entryType:'pvc', type:'PVC DN'+diameter, baseType:'PVC', userNum:'', source:diameter, proj:length});
+  const ts_pvc = new Date().toLocaleString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  tempRows.push({entryType:'pvc', type:'PVC DN'+diameter, baseType:'PVC', userNum:'', source:diameter, proj:length, timestamp:ts_pvc});
   renderSaisieTable();
   document.getElementById('pvcForm').reset();
 }
@@ -668,14 +666,17 @@ function calculateEquipments(){
 // ════ SAVE / LOAD ════
 function saveProject(){
   if(tempRows.length === 0){ alert('Aucune donnée !'); return; }
+  const projName = document.getElementById('projectName').value.trim();
   const pkg = {
-    metadata: {name:document.getElementById('projectName').value, commune:document.getElementById('projectCommune').value, date:document.getElementById('projectDate').value, engineer:document.getElementById('projectEngineer').value},
+    metadata: {name:projName, commune:document.getElementById('projectCommune').value, date:document.getElementById('projectDate').value},
     rows: tempRows
   };
+  const safeName = (projName || ('AEP_'+(pkg.metadata.commune||'Projet'))).replace(/[^a-zA-Z0-9_\u00C0-\u024F-]/g,'_');
   const a = document.createElement('a');
   a.href = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(pkg));
-  a.download = `Backup_AEP_${pkg.metadata.commune||'Projet'}.json`;
+  a.download = safeName + '.json';
   a.click();
+  showToast('Projet sauvegardé : ' + safeName + '.json');
 }
 
 function importProject(e){
@@ -687,7 +688,6 @@ function importProject(e){
         document.getElementById('projectName').value = imp.metadata.name||'';
         document.getElementById('projectCommune').value = imp.metadata.commune||'';
         document.getElementById('projectDate').value = imp.metadata.date||'';
-        document.getElementById('projectEngineer').value = imp.metadata.engineer||'';
         tempRows = imp.rows||[];
       } else { tempRows = imp; }
       renderSaisieTable();
@@ -703,11 +703,10 @@ function exportToExcel(){
   const proj = document.getElementById('projectName').value||'Non spécifié';
   const com = document.getElementById('projectCommune').value||'';
   const dat = document.getElementById('projectDate').value||'';
-  const eng = document.getElementById('projectEngineer').value||'';
   const dataSaisie = [
-    ["Projet:",proj,"Commune:",com,"Date:",dat,"Ingénieur:",eng],[],
-    ["Élément/Nœud","Source/DN","Projetée/Longueur","Type"],
-    ...tempRows.map(r => [r.type, r.source+(r.entryType==='pvc'?' mm':' mm'), r.proj+(r.entryType==='pvc'?' m':' mm'), r.entryType==='pvc'?'Conduite':'Nœud'])
+    ["Projet:",proj,"Commune:",com,"Date:",dat],[],
+    ["Élément/Nœud","Source/DN","Projetée/Longueur","Type","Date & Heure Saisie"],
+    ...tempRows.map(r => [r.type, r.source+(r.entryType==='pvc'?' mm':' mm'), r.proj+(r.entryType==='pvc'?' m':' mm'), r.entryType==='pvc'?'Conduite':'Nœud', r.timestamp||'—'])
   ];
   const dataRes = [
     ["Projet:",proj,"Commune:",com,"Date:",dat],[],
@@ -727,7 +726,6 @@ function exportToPDF(){
   const proj = document.getElementById('projectName').value||'Non spécifié';
   const com = document.getElementById('projectCommune').value||'';
   const dat = document.getElementById('projectDate').value||'';
-  const eng = document.getElementById('projectEngineer').value||'';
   const user_name = currentUser ? (USERS[currentUser]?.displayName||currentUser) : '—';
   const now = new Date();
   const dateStr = now.toLocaleDateString('fr-FR');
@@ -736,7 +734,6 @@ function exportToPDF(){
   const qrContent = 
     'Projet: '+proj+
     '\nCommune: '+(com||'—')+
-    '\nIngénieur: '+eng+
     '\nSaisie par: '+user_name+
     '\nDate export: '+dateStr+' '+timeStr+
     '\nNb éléments: '+tempRows.length+
@@ -782,7 +779,7 @@ function exportToPDF(){
   });
 }
 
-function _doPDF(qrDataUrl, proj, com, dat, eng, user_name, dateStr){
+function _doPDF(qrDataUrl, proj, com, dat, user_name, dateStr){
   const {jsPDF} = window.jspdf;
   const doc = new jsPDF('p','mm','a4');
   const pW = doc.internal.pageSize.getWidth();
@@ -834,7 +831,7 @@ function _doPDF(qrDataUrl, proj, com, dat, eng, user_name, dateStr){
 
   const infoData = [
     ['Projet:',proj,'Commune:',com],
-    ['Date:',dat,'Ingénieur:',eng],
+    ['Date:',dat],
     ['Établi par:',user_name,'Date export:',dateStr]
   ];
   doc.autoTable({
