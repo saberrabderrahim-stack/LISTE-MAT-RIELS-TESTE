@@ -717,7 +717,8 @@ function exportToExcel(){
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(dataSaisie), "Saisie Globale");
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(dataRes), "Récapitulatif Matériel");
-  XLSX.writeFile(wb, `Export_AEP_${com}_${dat.replace(/-/g,'')}.xlsx`);
+  const safeProjXlsx = (proj||com||'AEP').replace(/[^a-zA-Z0-9_\u00C0-\u024F-]/g,'_');
+  XLSX.writeFile(wb, safeProjXlsx + '.xlsx');
 }
 
 // ════ PDF EXPORT ════
@@ -774,7 +775,7 @@ function exportToPDF(){
 
   showToast('Génération du PDF en cours...');
   fetchQR(qrContent, function(qrDataUrl){
-    try{ _doPDF(qrDataUrl, proj, com, dat, eng, user_name, dateStr); }
+    try{ _doPDF(qrDataUrl, proj, com, dat, user_name, dateStr); }
     catch(err){ console.error('PDF:', err); showToast('Erreur PDF: '+err.message, 'error'); }
   });
 }
@@ -881,7 +882,8 @@ function _doPDF(qrDataUrl, proj, com, dat, user_name, dateStr){
   });
 
   ftr(1);
-  doc.save(`Devis_AEP_${com||'Export'}_${dat?dat.replace(/-/g,''):dateStr.replace(/\//g,'')}.pdf`);
+  const safeProjPdf = (proj||com||'AEP').replace(/[^a-zA-Z0-9_\u00C0-\u024F-]/g,'_');
+  doc.save(safeProjPdf + '.pdf');
   showToast('PDF exporté avec succès !');
 }
 
